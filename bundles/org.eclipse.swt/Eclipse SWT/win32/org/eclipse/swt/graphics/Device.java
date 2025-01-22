@@ -33,6 +33,8 @@ import org.eclipse.swt.widgets.*;
  */
 public abstract class Device implements Drawable {
 
+	static boolean strictChecks = Boolean.getBoolean("org.eclipse.swt.internal.enableStrictChecks");
+
 	/* Debugging */
 	public static boolean DEBUG;
 	boolean debug = DEBUG;
