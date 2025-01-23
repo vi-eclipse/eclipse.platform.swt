@@ -53,7 +53,8 @@ final class ScalingSWTFontRegistry implements SWTFontRegistry {
 
 		private Font scaleFont(int zoom) {
 			FontData fontData = baseFont.getFontData()[0];
-			fontData.data.lfHeight = computePixels(zoom, fontData);
+
+			fontData.data.lfHeight = fontData.data.lfHeight * Math.round(1.0f*zoom/baseFont.zoom);
 			Font scaledFont = Font.win32_new(device, fontData, zoom);
 			addScaledFont(zoom, scaledFont);
 			return scaledFont;
@@ -168,10 +169,16 @@ final class ScalingSWTFontRegistry implements SWTFontRegistry {
 	}
 
 	private int computeZoom(FontData fontData) {
-		int dpi = device.getDPI().x;
+
+		int pixelHeight = fontData.data.lfHeight;
+		float pointHeight = fontData.height;
+		if (pixelHeight == 0 || pointHeight == 0.0) {
+			return 100;
+		}
 		int pixelsAtPrimaryMonitorZoom = computePixels(fontData.height);
-		int value = DPIUtil.mapDPIToZoom(dpi) * fontData.data.lfHeight / pixelsAtPrimaryMonitorZoom;
-		return value;
+		int dpi = device.getDPI().x;
+		int zoom = DPIUtil.mapDPIToZoom(dpi);
+		return Math.round(1.0f * zoom * pixelHeight / pixelsAtPrimaryMonitorZoom);
 	}
 
 	private int computePixels(int zoom, FontData fontData) {

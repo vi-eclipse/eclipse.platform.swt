@@ -54,7 +54,7 @@ public final class Font extends Resource {
 	 * The zoom in % of the standard resolution used for conversion of point height to pixel height
 	 * (Warning: This field is platform dependent)
 	 */
-	int zoom;
+	public int zoom;
 /**
  * Prevents uninitialized instances from being created outside the package.
  */
@@ -213,7 +213,7 @@ public FontData[] getFontData() {
 	if (isDisposed()) SWT.error(SWT.ERROR_GRAPHIC_DISPOSED);
 	LOGFONT logFont = new LOGFONT ();
 	OS.GetObject(handle, LOGFONT.sizeof, logFont);
-	float heightInPoints = device.computePoints(logFont, handle, DPIUtil.mapZoomToDPI(zoom));
+	float heightInPoints = device.computePoints(logFont, handle, zoom);
 	return new FontData[] {FontData.win32_new(logFont, heightInPoints)};
 }
 
@@ -236,16 +236,18 @@ void init (FontData fd) {
 	if (fd == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
 	LOGFONT logFont = fd.data;
 	int lfHeight = logFont.lfHeight;
+	/*
 	logFont.lfHeight = device.computePixels(fd.height);
 
 	int primaryZoom = extractZoom(device);
 	if (zoom != primaryZoom) {
-		float scaleFactor = 1f * zoom / primaryZoom;
-		logFont.lfHeight *= scaleFactor;
+		System.out.println("Font");
+		//float scaleFactor = 1f * zoom / primaryZoom;
+		//logFont.lfHeight *= scaleFactor;
 	}
-
+*/
 	handle = OS.CreateFontIndirect(logFont);
-	logFont.lfHeight = lfHeight;
+	//logFont.lfHeight = lfHeight;
 	if (handle == 0) SWT.error(SWT.ERROR_NO_HANDLES);
 }
 
@@ -276,11 +278,15 @@ public String toString () {
 	return "Font {" + handle + "}";
 }
 
-private static int extractZoom(Device device) {
+private static int getDPI(Device device) {
 	if (device == null) {
 		return DPIUtil.getNativeDeviceZoom();
 	}
 	return DPIUtil.mapDPIToZoom(device._getDPIx());
+}
+
+private static int extractZoom(Device device) {
+	return 100;
 }
 
 /**
@@ -331,8 +337,15 @@ public static Font win32_new(Device device, long handle) {
  * @since 3.126
  */
 public static Font win32_new(Device device, long handle, int zoom) {
-	Font font = win32_new(device, handle);
+	Font font = new Font(device);
 	font.zoom = zoom;
+	font.handle = handle;
+	/*
+	 * When created this way, Font doesn't own its .handle, and
+	 * for this reason it can't be disposed. Tell leak detector
+	 * to just ignore it.
+	 */
+	font.ignoreNonDisposed();
 	return font;
 }
 
