@@ -169,30 +169,16 @@ final class ScalingSWTFontRegistry implements SWTFontRegistry {
 	}
 
 	private int computeZoom(FontData fontData) {
-
 		int pixelHeight = fontData.data.lfHeight;
 		float pointHeight = fontData.height;
 		if (pixelHeight == 0 || pointHeight == 0.0) {
 			return 100;
 		}
-		int pixelsAtPrimaryMonitorZoom = computePixels(fontData.height);
-		int dpi = device.getDPI().x;
-		int zoom = DPIUtil.mapDPIToZoom(dpi);
-		return Math.round(1.0f * zoom * pixelHeight / pixelsAtPrimaryMonitorZoom);
+		float computedPoints = computePointsFromPixels(pixelHeight);
+		return Math.round(100.0f * computedPoints / pointHeight);
 	}
 
-	private int computePixels(int zoom, FontData fontData) {
-		int dpi = device.getDPI().x;
-		int adjustedLogFontHeight = computePixels(fontData.height);
-		int primaryZoom = DPIUtil.mapDPIToZoom(dpi);
-		if (zoom != primaryZoom) {
-			adjustedLogFontHeight *= (1f * zoom / primaryZoom);
-		}
-		return adjustedLogFontHeight;
-	}
-
-	private int computePixels(float height) {
-		int dpi = device.getDPI().x;
-		return -(int)(0.5f + (height * dpi / 72f));
+	private float computePointsFromPixels(int pixelHeight) {
+		return -(pixelHeight / 96f * 72f);
 	}
 }

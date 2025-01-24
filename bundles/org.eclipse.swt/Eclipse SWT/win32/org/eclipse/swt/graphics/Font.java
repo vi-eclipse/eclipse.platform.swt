@@ -236,18 +236,16 @@ void init (FontData fd) {
 	if (fd == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
 	LOGFONT logFont = fd.data;
 	int lfHeight = logFont.lfHeight;
-	/*
 	logFont.lfHeight = device.computePixels(fd.height);
 
 	int primaryZoom = extractZoom(device);
 	if (zoom != primaryZoom) {
-		System.out.println("Font");
-		//float scaleFactor = 1f * zoom / primaryZoom;
-		//logFont.lfHeight *= scaleFactor;
+		float scaleFactor = 1f * zoom / primaryZoom;
+		logFont.lfHeight *= scaleFactor;
 	}
-*/
+
 	handle = OS.CreateFontIndirect(logFont);
-	//logFont.lfHeight = lfHeight;
+	logFont.lfHeight = lfHeight;
 	if (handle == 0) SWT.error(SWT.ERROR_NO_HANDLES);
 }
 
@@ -278,15 +276,11 @@ public String toString () {
 	return "Font {" + handle + "}";
 }
 
-private static int getDPI(Device device) {
+private static int extractZoom(Device device) {
 	if (device == null) {
 		return DPIUtil.getNativeDeviceZoom();
 	}
-	return DPIUtil.mapDPIToZoom(device._getDPIx());
-}
-
-private static int extractZoom(Device device) {
-	return 100;
+	return device.getDeviceZoom();
 }
 
 /**

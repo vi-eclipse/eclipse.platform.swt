@@ -268,6 +268,43 @@ protected void create(DeviceData deviceData) {
 	if (handle == 0) SWT.error(SWT.ERROR_NO_HANDLES);
 }
 
+@Override
+protected float computePoints(LOGFONT logFont, long hFont, int zoom) {
+	long hDC = internal_new_GC (null);
+	int logPixelsY = OS.GetDeviceCaps(hDC, OS.LOGPIXELSY);
+	int pixels = 0;
+	if (logFont.lfHeight > 0) {
+		/*
+		 * Feature in Windows. If the lfHeight of the LOGFONT structure
+		 * is positive, the lfHeight measures the height of the entire
+		 * cell, including internal leading, in logical units. Since the
+		 * height of a font in points does not include the internal leading,
+		 * we must subtract the internal leading, which requires a TEXTMETRIC.
+		 */
+		long oldFont = OS.SelectObject(hDC, hFont);
+		TEXTMETRIC lptm = new TEXTMETRIC ();
+		OS.GetTextMetrics(hDC, lptm);
+		OS.SelectObject(hDC, oldFont);
+		pixels = logFont.lfHeight - lptm.tmInternalLeading;
+	} else {
+		pixels = -logFont.lfHeight;
+	}
+	internal_dispose_GC (hDC, null);
+	float adjustedZoomFactor = 1.0f;
+	if (zoom > 0) {
+		// as Device::computePoints will always return point on the basis of the
+		// primary monitor zoom, a custom zoomFactor must be calculated if the font
+		// is used for a different zoom level
+		adjustedZoomFactor *= (100.0f / zoom);
+	}
+	return adjustedZoomFactor * pixels * 72f / logPixelsY;
+}
+
+@Override
+protected int getDeviceZoom() {
+	return 100;
+}
+
 /**
  * Invokes platform specific functionality to allocate a new GC handle.
  * <p>
