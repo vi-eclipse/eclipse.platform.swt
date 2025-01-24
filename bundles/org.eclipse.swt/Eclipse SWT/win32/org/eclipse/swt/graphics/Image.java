@@ -2073,6 +2073,9 @@ public String toString () {
  * @noreference This method is not intended to be referenced by clients.
  */
 public static Image win32_new(Device device, int type, long handle, int nativeZoom) {
+	if (Device.strictChecks && nativeZoom == 0) {
+		SWT.error(SWT.ERROR_INVALID_ARGUMENT, null, "Image would be initialized with 0 zoom");
+	}
 	Image image = new Image(device, nativeZoom);
 	image.type = type;
 	image.new ImageHandle(handle, nativeZoom);
