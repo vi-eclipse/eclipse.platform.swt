@@ -187,6 +187,7 @@ public class StyledText extends Canvas {
 	AccessibleAdapter accAdapter;
 	MouseNavigator mouseNavigator;
 	boolean middleClickPressed;
+	private final static int BASE_DPI = 96;
 
 	//block selection
 	boolean blockSelection;
@@ -304,9 +305,11 @@ public class StyledText extends Canvas {
 				}
 			}
 		}
-		Point screenDPI = styledText.getDisplay().getDPI();
+
 		Point printerDPI = printer.getDPI();
 		resources = new HashMap<> ();
+		int scaleFactorX = printerDPI.x / BASE_DPI;
+		int scaleFactorY = printerDPI.y / BASE_DPI;
 		for (int i = 0; i < lineCount; i++) {
 			Color color = printerRenderer.getLineBackground(i, null);
 			if (color != null) {
@@ -323,7 +326,7 @@ public class StyledText extends Canvas {
 			}
 			int indent = printerRenderer.getLineIndent(i, 0);
 			if (indent != 0) {
-				printerRenderer.setLineIndent(i, 1, indent * printerDPI.x / screenDPI.x);
+				printerRenderer.setLineIndent(i, 1, indent * scaleFactorX);
 			}
 		}
 		StyleRange[] styles = printerRenderer.styles;
@@ -367,17 +370,17 @@ public class StyledText extends Canvas {
 			if (!printOptions.printTextFontStyle) {
 				style.fontStyle = SWT.NORMAL;
 			}
-			style.rise = style.rise * printerDPI.y / screenDPI.y;
+			style.rise = style.rise * scaleFactorY;
 			GlyphMetrics metrics = style.metrics;
 			if (metrics != null) {
-				metrics.ascent = metrics.ascent * printerDPI.y / screenDPI.y;
-				metrics.descent = metrics.descent * printerDPI.y / screenDPI.y;
-				metrics.width = metrics.width * printerDPI.x / screenDPI.x;
+				metrics.ascent = metrics.ascent * scaleFactorY;
+				metrics.descent = metrics.descent * scaleFactorY;
+				metrics.width = metrics.width * scaleFactorX;
 			}
 		}
-		lineSpacing = styledText.lineSpacing * printerDPI.y / screenDPI.y;
+		lineSpacing = styledText.lineSpacing * scaleFactorY;
 		if (printOptions.printLineNumbers) {
-			printMargin = 3 * printerDPI.x / screenDPI.x;
+			printMargin = 3 * scaleFactorX;
 		}
 	}
 	/**
