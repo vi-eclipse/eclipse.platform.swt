@@ -103,7 +103,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class Test_org_eclipse_swt_browser_Browser extends Test_org_eclipse_swt_widgets_Composite {
 
 	// TODO Reduce to reasonable value
-	private static Duration MAXIMUM_BROWSER_CREATION_TIME = Duration.ofSeconds(90);
+	private static Duration MAXIMUM_BROWSER_CREATION_TIME = Duration.ofSeconds(3);
 
 	static {
 		try {
