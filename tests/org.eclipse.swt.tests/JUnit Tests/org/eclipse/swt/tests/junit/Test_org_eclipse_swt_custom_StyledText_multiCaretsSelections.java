@@ -38,7 +38,7 @@ import org.junit.rules.TestWatcher;
  * @see org.eclipse.swt.custom.StyledText
  */
 public class Test_org_eclipse_swt_custom_StyledText_multiCaretsSelections {
-
+//hola!
 	Shell shell;
 	StyledText text;
 	GC gc;
