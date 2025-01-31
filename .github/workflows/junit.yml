@@ -1,10 +1,10 @@
 name: Publish Unit Test Results
 
-on: []
-#  workflow_run:
-#    workflows: ["SWT Matrix Build"]
-#    types:
-#      - completed
+on: 
+  workflow_run:
+    workflows: ["SWT Matrix Build"]
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -13,7 +13,8 @@ jobs:
   unit-test-results:
     name: Unit Test Results
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion != 'skipped'
+#    if: github.event.workflow_run.conclusion != 'skipped'
+    if: ${{ false }}
     permissions:
       checks: write
       pull-requests: write
