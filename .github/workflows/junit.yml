@@ -1,6 +1,6 @@
 name: Publish Unit Test Results
 
-#on:
+on: []
 #  workflow_run:
 #    workflows: ["SWT Matrix Build"]
 #    types:
