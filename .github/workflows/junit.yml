@@ -1,10 +1,10 @@
 name: Publish Unit Test Results
 
-on:
-  workflow_run:
-    workflows: ["SWT Matrix Build"]
-    types:
-      - completed
+#on:
+#  workflow_run:
+#    workflows: ["SWT Matrix Build"]
+#    types:
+#      - completed
 
 permissions:
   contents: read
