@@ -2847,14 +2847,8 @@ private static Set<Entry<String, String>> getPropertiesSafe() {
 private static List<String> getOpenedDescriptors() {
 	List<String> paths = new ArrayList<>();
 	Path fd = Paths.get("/proc/self/fd/");
-	try(DirectoryStream<Path> directoryStream = Files.newDirectoryStream(fd)){
-		directoryStream.forEach(f -> {
-			try {
-				paths.add(Files.isSymbolicLink(f)? Files.readSymbolicLink(f).toString() : f.toString());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
+	try(DirectoryStream<Path> directoryStream = Files.newDirectoryStream(fd, path -> isTestRelatedFileDescriptor(path))) {
+		directoryStream.forEach(path-> paths.add(resolveSymLink(path)));
 	} catch (IOException e1) {
 		e1.printStackTrace();
 	}
@@ -2865,6 +2859,23 @@ private static List<String> getOpenedDescriptors() {
 	return paths;
 }
 
+
+private static boolean isTestRelatedFileDescriptor(Path fileDescriptorPath) {
+	// Do not consider file descriptors of Maven artifacts that are currently opened
+	// by other Maven plugins executed in parallel build (such as parallel
+	// compilation of the swt.tools bundle etc.)
+	String resolvedPath = resolveSymLink(fileDescriptorPath);
+	return resolvedPath != null && !resolvedPath.contains(".m2") && !resolvedPath.contains("target/classes");
+}
+
+private static String resolveSymLink(Path path) {
+	try {
+		return Files.isSymbolicLink(path) ? Files.readSymbolicLink(path).toString() : path.toString();
+	} catch (IOException e) {
+		e.printStackTrace();
+	}
+	return null;
+}
 
 private static void processUiEvents() {
 	Display display = Display.getCurrent();
