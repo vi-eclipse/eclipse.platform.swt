@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(TracingSuite.class)
-@TracingOptions(stackDumpTimeoutSeconds = 60)
+@TracingOptions(stackDumpTimeoutSeconds = 10)
 @Suite.SuiteClasses({
 	Test_org_eclipse_swt_browser_Browser.class,
 })
