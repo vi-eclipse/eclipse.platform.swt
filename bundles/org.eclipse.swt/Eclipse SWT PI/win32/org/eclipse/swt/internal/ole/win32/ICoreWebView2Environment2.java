@@ -20,6 +20,7 @@ public ICoreWebView2Environment2(long address) {
 }
 
 public int CreateWebResourceRequest(char[] uri, char[] method, IStream postData, char[] headers, long[] request) {
+	trace("ICoreWebView2Environment2.CreateWebResourceRequest()");
 	return COM.VtblCall(8, address, uri, method, (postData != null) ? postData.address : 0, headers, request);
 }
 

@@ -20,10 +20,12 @@ public ICoreWebView2Environment(long address) {
 }
 
 public int CreateCoreWebView2Controller(long parentWindow, IUnknown handler) {
+	trace("ICoreWebView2Environment.CreateCoreWebView2Controller()");
 	return COM.VtblCall(3, address, parentWindow, handler.address);
 }
 
 public int get_BrowserVersionString(long[] versionInfo) {
+	trace("ICoreWebView2Environment.get_BrowserVersionString()");
 	return COM.VtblCall(5, address, versionInfo);
 }
 
