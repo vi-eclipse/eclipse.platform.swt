@@ -65,6 +65,7 @@ public abstract class Widget {
 	 * @noreference This field is not intended to be referenced by clients.
 	 */
 	public int nativeZoom;
+	int staticZoom = SWT.DEFAULT;
 	int style, state;
 	Display display;
 	EventTable eventTable;
@@ -351,6 +352,10 @@ void checkParent (Widget parent) {
 	if (parent.isDisposed ()) error (SWT.ERROR_INVALID_ARGUMENT);
 	parent.checkWidget ();
 	parent.checkOpened ();
+	if (parent.staticZoom != SWT.DEFAULT) {
+		System.out.println(String.format("Would set static zoom to %s", getClass().getSimpleName()));
+		staticZoom = parent.staticZoom;
+	}
 }
 
 void maybeEnableDarkSystemTheme(long handle) {
@@ -1271,8 +1276,16 @@ boolean sendMouseEvent (int type, int button, int count, int detail, boolean sen
 	event.button = button;
 	event.detail = detail;
 	event.count = count;
-	int zoom = getZoom();
-	event.setLocation(DPIUtil.scaleDown(OS.GET_X_LPARAM (lParam), zoom), DPIUtil.scaleDown(OS.GET_Y_LPARAM (lParam), zoom));
+	int zoom;
+	if (staticZoom > 0) {
+		zoom = staticZoom;
+	} else {
+		zoom = getZoom();
+	}
+	int mouseX = OS.GET_X_LPARAM (lParam);
+	int mouseY = OS.GET_Y_LPARAM (lParam);
+	event.setLocation(DPIUtil.scaleDown(mouseX, zoom), DPIUtil.scaleDown(mouseY, zoom));
+	//System.out.println(String.format("Mouse: %s/%s %s/%s", mouseX, mouseY, event.getLocation().x, event.getLocation().y));
 	setInputState (event, type);
 	mapEvent (hwnd, event);
 	if (send) {
@@ -1457,6 +1470,14 @@ public void setData (String key, Object value) {
 		}
 	}
 	if (key.equals(SWT.SKIN_CLASS) || key.equals(SWT.SKIN_ID)) this.reskin(SWT.ALL);
+
+	if ("STATIC_ZOOM".equals(key)) {
+		try {
+			staticZoom = (int)value;
+		} catch (ClassCastException e) {
+			SWT.error(SWT.ERROR_INVALID_ARGUMENT, e, "Data for STATIC_ZOOM must be an integer value");
+		}
+	}
 }
 
 boolean sendFocusEvent (int type) {
@@ -2686,15 +2707,28 @@ void notifyDisposalTracker() {
 }
 
 GC createNewGC(long hDC, GCData data) {
-	data.nativeZoom = nativeZoom;
+	if (staticZoom > 0) {
+		data.nativeZoom = staticZoom;
+		if (data.font != null) {
+			data.font = SWTFontProvider.getFont(display, data.font.getFontData()[0], staticZoom);
+		}
+	} else {
+		data.nativeZoom = nativeZoom;
+	}
 	return GC.win32_new(hDC, data);
 }
 
 int getNativeZoom() {
+	if(staticZoom > 0) {
+		return staticZoom;
+	}
 	return nativeZoom;
 }
 
 int getZoom() {
+	if(staticZoom > 0) {
+		return staticZoom;
+	}
 	return DPIUtil.getZoomForAutoscaleProperty(nativeZoom);
 }
 

@@ -54,7 +54,7 @@ public final class Font extends Resource {
 	 * The zoom in % of the standard resolution used for conversion of point height to pixel height
 	 * (Warning: This field is platform dependent)
 	 */
-	int zoom;
+	public int zoom;
 
 	/**
 	 * Font height in points. As the conversion to pixel height involves rounding the fontHeight must

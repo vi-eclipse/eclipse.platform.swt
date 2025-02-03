@@ -1753,7 +1753,10 @@ public long internal_new_GC (GCData data) {
 			}
 		}
 		data.device = display;
-		data.nativeZoom = getNativeZoom();
+		data.nativeZoom =  getNativeZoom();
+		if (staticZoom != SWT.DEFAULT) {
+			data.nativeZoom = staticZoom;
+		}
 		int foreground = getForegroundPixel ();
 		if (foreground != OS.GetTextColor (hDC)) data.foreground = foreground;
 		Control control = findBackgroundControl ();
@@ -3259,7 +3262,13 @@ void setBoundsInPixels (int x, int y, int width, int height, int flags, boolean 
 public void setBounds (Rectangle rect) {
 	checkWidget ();
 	if (rect == null) error (SWT.ERROR_NULL_ARGUMENT);
-	setBoundsInPixels(DPIUtil.scaleUp(rect, getZoom()));
+	int zoom;
+	if(staticZoom == SWT.DEFAULT) {
+		zoom = getZoom();
+	} else {
+		zoom = parent.getZoom();
+	}
+	setBoundsInPixels(DPIUtil.scaleUp(rect, zoom));
 }
 
 void setBoundsInPixels (Rectangle rect) {

@@ -291,8 +291,9 @@ public void setCaret (Caret caret) {
 @Override
 public void setFont (Font font) {
 	checkWidget ();
-	if (caret != null) caret.setFont (font);
-	super.setFont (font);
+	Font scaledFont = SWTFontProvider.getFont(display, font.getFontData()[0], getFontZoom());
+	if (caret != null) caret.setFont (scaledFont);
+	super.setFont (scaledFont);
 }
 
 /**

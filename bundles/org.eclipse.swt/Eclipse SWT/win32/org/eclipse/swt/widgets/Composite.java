@@ -1398,6 +1398,47 @@ LRESULT WM_ERASEBKGND (long wParam, long lParam) {
 }
 
 @Override
+public Point toDisplay (int x, int y) {
+	if (staticZoom > 0) {
+		checkWidget ();
+		int zoom = getZoom();
+		Point displayPointInPixels = toDisplayInPixels(DPIUtil.scaleUp(x, staticZoom), DPIUtil.scaleUp(y, staticZoom));
+		final Point ret1 = getDisplay().translateFromDisplayCoordinates(displayPointInPixels, zoom);
+		final Point ret2 =super.toDisplay(x, y);
+		return ret1;
+	} else {
+		return super.toDisplay(x, y);
+	}
+}
+
+@Override
+public Point toControl (int x, int y) {
+	if (staticZoom > 0) {
+		checkWidget ();
+		int adjustedNativeZoom = DPIUtil.getZoomForAutoscaleProperty(nativeZoom);
+		int scaledX = DPIUtil.scaleUp(x, adjustedNativeZoom, staticZoom);
+		int scaledY = DPIUtil.scaleUp(y, adjustedNativeZoom, staticZoom);
+		Point displayPointInPixels = getDisplay().translateToDisplayCoordinates(new Point(x, y), adjustedNativeZoom);
+		final Point controlPointInPixels = toControlInPixels(displayPointInPixels.x, displayPointInPixels.y);
+		final Point controlPointInPixels2 = super.toControl(x, y);
+		return controlPointInPixels;
+	} else {
+		return super.toControl(x, y);
+	}
+}
+
+@Override
+public void setBounds(int x, int y, int width, int height) {
+	if (staticZoom > 0) {
+		checkWidget ();
+		Rectangle rect = new Rectangle(x, y, width, height);
+		setBoundsInPixels(DPIUtil.scaleUp(rect, parent.getZoom()));
+	} else {
+		super.setBounds(x, y, width, height);
+	}
+}
+
+@Override
 LRESULT WM_GETDLGCODE (long wParam, long lParam) {
 	LRESULT result = super.WM_GETDLGCODE (wParam, lParam);
 	if (result != null) return result;
