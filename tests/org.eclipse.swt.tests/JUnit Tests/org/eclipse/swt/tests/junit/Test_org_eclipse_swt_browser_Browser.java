@@ -81,12 +81,14 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
@@ -158,11 +160,11 @@ public static Collection<Object[]> browserFlagsToTest() {
 	return browserFlags;
 }
 
-public Test_org_eclipse_swt_browser_Browser(int swtBrowserSettings) {
-	this.swtBrowserSettings = swtBrowserSettings;
+public Test_org_eclipse_swt_browser_Browser() {
+	this.swtBrowserSettings = SWT.None;
 }
 
-@BeforeClass
+@BeforeAll
 public static void setupEdgeEnvironment() {
 	// Initialize Edge environment before any test runs to isolate environment setup
 	// as this takes quite long in GitHub Actions builds
@@ -177,7 +179,7 @@ public static void setupEdgeEnvironment() {
 }
 
 @Override
-@Before
+@BeforeEach
 public void setUp() {
 	super.setUp();
 	testNumber ++;
@@ -194,7 +196,7 @@ public void setUp() {
 
 	isEdge = browser.getBrowserType().equals("edge");
 
-	String shellTitle = name.getMethodName();
+	String shellTitle = "test";
 	if (SwtTestUtil.isGTK) {
 
 		// Note, webkitGtk version is only available once Browser is instantiated.
@@ -204,6 +206,7 @@ public void setUp() {
 	}
 	shell.setText(shellTitle);
 	setWidget(browser); // For browser to occupy the whole shell, not just half of it.
+	shell.open();
 
 	testLog = new StringBuilder("\nTest log:\n");
 	if (SwtTestUtil.isGTK) {
@@ -213,6 +216,13 @@ public void setUp() {
 		descriptors = Collections.unmodifiableList(getOpenedDescriptors());
 		System.out.println("\n### Descriptors opened BEFORE " + name.getMethodName() + ": " + descriptors.size());
 	}
+}
+
+@Override
+@AfterEach
+public void tearDown() {
+	super.tearDown();
+	screenshotRule.dispose();
 }
 
 @Override
@@ -330,7 +340,7 @@ public void test_ConstructorLorg_eclipse_swt_widgets_CompositeI() {
 /**
  * Regression test for issue #339: [Edge] No more handle exceptions from Edge browser
  */
-@Test
+@RepeatedTest(500)
 public void test_Constructor_asyncParentDisposal() {
 	Display.getCurrent().asyncExec(() -> {
 		shell.dispose();
@@ -1438,6 +1448,7 @@ public void test_VisibilityWindowListener_eventSize() {
 @Override
 @Test
 public void test_isVisible() {
+	shell.setVisible(false);
 	// Note. This test sometimes crashes with webkit1 because shell.setVisible() calls g_main_context_iteration(). See Bug 509411
 	// To reproduce, try running test suite 20 times in a loop.
 	super.test_isVisible();
