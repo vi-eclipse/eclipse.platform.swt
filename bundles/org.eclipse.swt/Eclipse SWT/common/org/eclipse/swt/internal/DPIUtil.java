@@ -388,6 +388,12 @@ public static int scaleUp(int size, int zoom) {
 	return Math.round (size * scaleFactor);
 }
 
+public static int scaleUp(int size, int targetZoom, int currentZoom) {
+	if (currentZoom == targetZoom || size == SWT.DEFAULT) return size;
+	float scaleFactor = (float) targetZoom / (float) currentZoom;
+	return Math.round (size * scaleFactor);
+}
+
 /**
  * Auto-scale up int dimensions if enabled for Drawable class.
  */

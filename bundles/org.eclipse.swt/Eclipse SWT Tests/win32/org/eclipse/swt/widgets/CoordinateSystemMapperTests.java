@@ -47,6 +47,13 @@ public class CoordinateSystemMapperTests {
 				createMonitor(mapper, boundsInPixelsForRightMonitor, 100) };
 	}
 
+	private void setupMonitorsWithNegativeCoords(CoordinateSystemMapper mapper) {
+		Rectangle boundsInPixelsForLeftMonitor = new Rectangle(-2000, 0, 2000, 2000);
+		Rectangle boundsInPixelsForRightMonitor = new Rectangle(0, 0, 2000, 2000);
+		monitors = new Monitor[] { createMonitor(mapper, boundsInPixelsForLeftMonitor, 200),
+				createMonitor(mapper, boundsInPixelsForRightMonitor, 100) };
+	}
+
 	private Stream<CoordinateSystemMapper> provideCoordinateSystemMappers() {
 		return Stream.of(getMultiZoomCoordinateSystemMapper(), getSingleZoomCoordinateSystemMapper());
 	}
@@ -170,6 +177,36 @@ public class CoordinateSystemMapperTests {
 		Rectangle rectInPxsTranslated = mapper.translateToDisplayCoordinates(rectInPtsTranslated,
 				monitors[0].getZoom());
 		assertEquals(rectInPxs, rectInPxsTranslated);
+	}
+
+	@Test
+	void translatePixelToPointInNegativeMonitor() {
+		MultiZoomCoordinateSystemMapper mapper = getMultiZoomCoordinateSystemMapper();
+		setupMonitorsWithNegativeCoords(mapper);
+		Point left = new Point(-1900, 1000);
+		Point leftTranslated = mapper.translateFromDisplayCoordinates(left, monitors[0].getZoom());
+		assertEquals(new MonitorAwarePoint(-1950, 500, monitors[0]), leftTranslated);
+		Point mid = new Point(-1000, 1000);
+		Point midTranslated = mapper.translateFromDisplayCoordinates(mid, monitors[0].getZoom());
+		assertEquals(new MonitorAwarePoint(-1500, 500, monitors[0]), midTranslated);
+		Point right = new Point(-100, 1000);
+		Point rightTranslated = mapper.translateFromDisplayCoordinates(right, monitors[0].getZoom());
+		assertEquals(new MonitorAwarePoint(-1050, 500, monitors[0]), rightTranslated);
+	}
+
+	@Test
+	void translatePointToPixelInNegativeMonitor() {
+		MultiZoomCoordinateSystemMapper mapper = getMultiZoomCoordinateSystemMapper();
+		setupMonitorsWithNegativeCoords(mapper);
+		Point left = new Point(-1950, 500);
+		Point leftTranslated = mapper.translateToDisplayCoordinates(left, monitors[0].getZoom());
+		assertEquals(new Point(-1900, 1000), leftTranslated);
+		Point mid = new Point(-1500, 500);
+		Point midTranslated = mapper.translateToDisplayCoordinates(mid, monitors[0].getZoom());
+		assertEquals(new Point(-1000, 1000), midTranslated);
+		Point right = new Point(-1050, 500);
+		Point rightTranslated = mapper.translateToDisplayCoordinates(right, monitors[0].getZoom());
+		assertEquals(new Point(-100, 1000), rightTranslated);
 	}
 
 	@Test
