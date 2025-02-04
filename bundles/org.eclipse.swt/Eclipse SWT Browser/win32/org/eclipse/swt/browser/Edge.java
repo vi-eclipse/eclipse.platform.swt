@@ -603,6 +603,7 @@ private IUnknown createControllerInitializationCallback(int previousAttempts) {
 		initializationRollback.run();
 	};
 	return newCallback((resultAsLong, pv) -> {
+		System.out.println(System.nanoTime() + " - Edge.createControllerInitializationCallback()");
 		int result = (int) resultAsLong;
 		if (browser.isDisposed()) {
 			initializationAbortion.run();
