@@ -268,12 +268,20 @@ int computePixels(float height) {
 }
 
 float computePoints(LOGFONT logFont, long hFont) {
-	return computePoints(logFont, hFont, -1);
+	return computePoints(logFont, hFont, SWT.DEFAULT);
 }
 
 float computePoints(LOGFONT logFont, long hFont, int zoom) {
 	long hDC = internal_new_GC (null);
-	int logPixelsY = getLogPixelsY(hDC, zoom);
+
+	float conversionFactor = 72f;
+	if (isAutoScalable() && zoom != SWT.DEFAULT) {
+		// For auto scalable devices we need to use a dynamic
+		// DPI value that is extracted from the zoom
+		conversionFactor /= DPIUtil.mapZoomToDPI(zoom);
+	} else {
+		conversionFactor /= OS.GetDeviceCaps(hDC, OS.LOGPIXELSY);
+	}
 	int pixels = 0;
 	if (logFont.lfHeight > 0) {
 		/*
@@ -292,14 +300,7 @@ float computePoints(LOGFONT logFont, long hFont, int zoom) {
 		pixels = -logFont.lfHeight;
 	}
 	internal_dispose_GC (hDC, null);
-	return pixels * 72f / logPixelsY;
-}
-
-/**
- * @since 3.129
- */
-protected int getLogPixelsY(long hFont, int zoom) {
-	return DPIUtil.mapZoomToDPI(zoom);
+	return pixels * conversionFactor;
 }
 
 /**

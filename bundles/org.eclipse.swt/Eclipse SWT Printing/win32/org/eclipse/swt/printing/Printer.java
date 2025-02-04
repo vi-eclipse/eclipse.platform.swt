@@ -269,12 +269,8 @@ protected void create(DeviceData deviceData) {
 }
 
 @Override
-protected int getLogPixelsY(long hFont, int zoom) {
-	return OS.GetDeviceCaps(hFont, OS.LOGPIXELSY);
-}
-
-@Override
 protected int getDeviceZoom() {
+	// Printer directly renders on pixel basis, so the zoom must be fixed to 100
 	return 100;
 }
 
@@ -305,9 +301,9 @@ public long internal_new_GC(GCData data) {
 			data.style |= SWT.LEFT_TO_RIGHT;
 		}
 		data.device = this;
-		data.font = Font.win32_new(this, OS.GetCurrentObject(handle, OS.OBJ_FONT), 100);
+		data.font = Font.win32_new(this, OS.GetCurrentObject(handle, OS.OBJ_FONT), getDeviceZoom());
 		isGCCreated = true;
-		data.nativeZoom = 100;
+		data.nativeZoom = getDeviceZoom();
 	}
 	return handle;
 }
