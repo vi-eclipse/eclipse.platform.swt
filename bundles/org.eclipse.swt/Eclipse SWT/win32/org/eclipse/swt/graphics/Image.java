@@ -228,7 +228,7 @@ public Image(Device device, Image srcImage, int flag) {
 	ImageHandle imageMetadata;
 	if (srcImage == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
 	if (srcImage.isDisposed()) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
-	Rectangle rect = srcImage.getBoundsInPixels();
+	Rectangle rect = srcImage.getBounds(getZoom());
 	this.type = srcImage.type;
 	if(srcImage.imageProvider != null) {
 		this.imageProvider = srcImage.imageProvider.createCopy(this);
