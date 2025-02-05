@@ -8,9 +8,7 @@ concurrency:
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches: [ akoch/** ]
 
 jobs:
   event_file:
@@ -28,10 +26,7 @@ jobs:
       matrix:
         java: [ '21' ]
         config: 
-          - { name: Linux, os: ubuntu-latest, native: gtk.linux.x86_64 }
-          - { name: Windows, os: windows-latest, native: win32.win32.x86_64 }
-          - { name: MacOS x86, os: macos-13, native: cocoa.macosx.x86_64 }
-          - { name: MacOS ARM, os: macos-latest, native: cocoa.macosx.aarch64 }
+          - { name: Windows 2022, os: windows-2022, native: win32.win32.x86_64 }          
     name: Verify ${{ matrix.config.name }} with Java-${{ matrix.java }}
     runs-on: ${{ matrix.config.os }}
     steps:
@@ -86,11 +81,3 @@ jobs:
         -DfailIfNoTests=true
         -Dtest=PerformanceTests
         integration-test
-    - name: Upload Test Results for ${{ matrix.config.name }} / Java-${{ matrix.java }}
-      if: always()
-      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
-      with:
-        name: test-results-${{ matrix.config.native }}-java${{ matrix.java }}
-        if-no-files-found: warn
-        path: |
-          ${{ github.workspace }}/**/target/surefire-reports/*.xml
