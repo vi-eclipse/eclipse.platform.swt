@@ -783,11 +783,7 @@ private ImageHandle getImageMetadata(int zoom) {
 	} else {
 		ImageData resizedData = getImageData(zoom);
 		ImageData newData = adaptImageDataIfDisabledOrGray(resizedData);
-		if (type == SWT.ICON) {
-			init(this.device, this, newData, newData.getTransparencyMask(), zoom);
-		} else {
-			init(newData, zoom);
-		}
+		init(newData, zoom);
 		init();
 	}
 	return zoomLevelToImageHandle.get(zoom);
