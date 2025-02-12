@@ -195,14 +195,15 @@ public FontData open () {
 	if (effectsVisible) {
 		lpcf.Flags |= OS.CF_EFFECTS;
 	}
+	int [] dpiX = new int[1];
+	int [] dpiY = new int[1];
+	OS.GetDpiForMonitor(getParent().getMonitor().handle, OS.MDT_EFFECTIVE_DPI, dpiX, dpiY);
 
 	long lpLogFont = OS.HeapAlloc (hHeap, OS.HEAP_ZERO_MEMORY, LOGFONT.sizeof);
 	if (fontData != null && fontData.data != null) {
 		LOGFONT logFont = fontData.data;
 		int lfHeight = logFont.lfHeight;
-		long hDC = OS.GetDC (0);
-		int pixels = -(int)(0.5f + (fontData.height * OS.GetDeviceCaps(hDC, OS.LOGPIXELSY) / 72));
-		OS.ReleaseDC (0, hDC);
+		int pixels = -(int)(0.5f + (fontData.height * dpiY[0] / 72));
 		logFont.lfHeight = pixels;
 		lpcf.Flags |= OS.CF_INITTOLOGFONTSTRUCT;
 		OS.MoveMemory (lpLogFont, logFont, LOGFONT.sizeof);
@@ -257,7 +258,7 @@ public FontData open () {
 			 * proper device.
 			 */
 			long hDC = OS.GetDC(0);
-			int logPixelsY = OS.GetDeviceCaps(hDC, OS.LOGPIXELSY);
+			int logPixelsY = dpiY[0];
 			int pixels = 0;
 			if (logFont.lfHeight > 0) {
 				/*
