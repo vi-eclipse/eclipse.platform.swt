@@ -174,6 +174,24 @@ public class GTK4 {
 	/** @param builder cast=(GdkContentFormatsBuilder *) */
 	public static final native long gdk_content_formats_builder_free_to_formats(long builder);
 
+	/* GtkFileChooser */
+	/** @param chooser cast=(GtkFileChooser *) */
+	public static final native long gtk_file_chooser_get_files(long chooser);
+	/** @param chooser cast=(GtkFileChooser *) */
+	public static final native long gtk_file_chooser_get_file(long chooser);
+	/**
+	 * @param chooser cast=(GtkFileChooser *)
+	 * @param file cast=(GFile *)
+	 * @param error cast=(GError **)
+	 */
+	public static final native boolean gtk_file_chooser_set_current_folder(long chooser, long file, long error);
+	/**
+	 * @param chooser cast=(GtkFileChooser *)
+	 * @param file cast=(GFile *)
+	 * @param error cast=(GError **)
+	 */
+	public static final native boolean gtk_file_chooser_set_file(long chooser, long file, long error);
+
 	/* GtkFileDialog */
 	/** @method flags=dynamic **/
 	public static final native long gtk_file_dialog_new();
@@ -318,6 +336,54 @@ public class GTK4 {
 	 */
 	public static final native long gtk_font_dialog_set_title(long self, byte[] title);
 
+	/* GtkColorDialog */
+	/**
+	 * @method flags=dynamic
+	 */
+	public static final native long gtk_color_dialog_new();
+	/**
+	 * @method flags=dynamic
+	 *
+	 * @param title cast=(char *)
+	 */
+	public static final native long gtk_color_dialog_set_title(long self, byte[] title);
+	/**
+	 * @method flags=dynamic
+	 *
+	 * @param with_alpha cast=(gboolean)
+	 */
+	public static final native void gtk_color_dialog_set_with_alpha(long self, boolean with_alpha);
+	/**
+	 * @method flags=dynamic
+	 */
+	public static final native boolean gtk_color_dialog_get_with_alpha(long self);
+	/**
+	 * @method flags=dynamic
+	 *
+	 * @param modal cast=(gboolean)
+	 */
+	public static final native void gtk_color_dialog_set_modal(long self, boolean modal);
+	/**
+	 * @method flags=dynamic
+	 */
+	public static final native boolean gtk_color_dialog_get_modal(long self);
+	/**
+	 * @method flags=dynamic
+	 *
+	 * @param parent cast=(GtkWindow *)
+	 * @param initial_color cast=(GdkRGBA *)
+	 * @param cancellable cast=(GCancellable *)
+	 * @param callback cast=(GAsyncReadyCallback)
+	 * @param user_data cast=(gpointer)
+	 */
+	public static final native void gtk_color_dialog_choose_rgba(long self, long parent, GdkRGBA initial_color, long cancellable, long callback, long user_data);
+	/**
+	 * @method flags=dynamic
+	 *
+	 * @param result cast=(GAsyncResult *)
+	 * @param error cast=(GError **)
+	 */
+	public static final native long gtk_color_dialog_choose_rgba_finish(long self, long result, long[] error);
 
 	/* GtkScrolledWindow */
 	public static final native long gtk_scrolled_window_new();
@@ -583,6 +649,18 @@ public class GTK4 {
 	 * @param allocation cast=(GtkAllocation *),flags=no_out
 	 */
 	public static final native void gtk_widget_size_allocate(long widget, GtkAllocation allocation, int baseline);
+	/**
+	 * @param widget cast=(GtkWidget *)
+	 * @param parent cast=(GtkWidget *)
+	 * @param previous_sibling cast=(GtkWidget *)
+	 */
+	public static final native void gtk_widget_insert_after(long widget, long parent, long previous_sibling);
+	/**
+	 * @param widget cast=(GtkWidget *)
+	 * @param parent cast=(GtkWidget *)
+	 * @param next_sibling cast=(GtkWidget *)
+	 */
+	public static final native void gtk_widget_insert_before(long widget, long parent, long next_sibling);
 
 	/* GtkComboBox */
 	/** @param combo_box cast=(GtkComboBox *) */
