@@ -661,6 +661,7 @@ public class OS extends C {
 	public static final int ILC_COLOR8 = 0x8;
 	public static final int ILC_MASK = 0x1;
 	public static final int ILC_MIRROR = 0x2000;
+	public static final int ILD_TRANSPARENT = 0x00000001;
 	public static final int IMAGE_ICON = 0x1;
 	public static final int IME_CMODE_FULLSHAPE = 0x8;
 	public static final int IME_CMODE_KATAKANA = 0x2;
@@ -1209,6 +1210,7 @@ public class OS extends C {
 	public static final int SET_FEATURE_ON_PROCESS = 0x2;
 	public static final int SHADEBLENDCAPS = 120;
 	public static final int SHGFI_ICON = 0x000000100;
+	public static final int SHGFI_ICONLOCATION = 0x000001000;
 	public static final int SHGFI_SMALLICON= 0x1;
 	public static final int SHGFI_LARGEICON= 0x0;
 	public static final int SHGFI_USEFILEATTRIBUTES = 0x000000010;
@@ -4458,6 +4460,11 @@ public static final native boolean ShowOwnedPopups (long hWnd, boolean fShow);
 public static final native boolean ShowScrollBar (long hWnd, int wBar, boolean bShow);
 /** @param hWnd cast=(HWND) */
 public static final native boolean ShowWindow (long hWnd, int nCmdShow);
+/**
+ * @param himl cast=(HIMAGELIST)
+ * @param flags cast=(UINT)
+ */
+public static final native long ImageList_GetIcon (long himl, int i, int flags);
 /**
  * @param hdc cast=(HDC)
  * @param lpdi flags=no_out

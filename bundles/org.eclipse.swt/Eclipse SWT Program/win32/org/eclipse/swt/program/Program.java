@@ -20,7 +20,9 @@ import java.util.stream.*;
 import org.eclipse.swt.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.*;
+import org.eclipse.swt.internal.ole.win32.*;
 import org.eclipse.swt.internal.win32.*;
+import org.eclipse.swt.widgets.*;
 
 /**
  * Instances of this class represent programs and
@@ -384,20 +386,13 @@ public ImageData getImageData (int zoom) {
 	int initialNativeZoom = getPrimaryMonitorZoomAtStartup();
 	if (extension != null) {
 		SHFILEINFO shfi = new SHFILEINFO ();
-		int flags = OS.SHGFI_ICON | OS.SHGFI_USEFILEATTRIBUTES;
-		boolean useLargeIcon = 100 * zoom /  initialNativeZoom >= 200;
-		if(useLargeIcon) {
-			flags |= OS.SHGFI_LARGEICON;
-			initialNativeZoom *= 2;
-		} else {
-			flags |= OS.SHGFI_SMALLICON;
-		}
+		int flags = OS.SHGFI_USEFILEATTRIBUTES | OS.SHGFI_ICONLOCATION;
 		TCHAR pszPath = new TCHAR (0, extension, true);
 		OS.SHGetFileInfo (pszPath.chars, OS.FILE_ATTRIBUTE_NORMAL, shfi, SHFILEINFO.sizeof, flags);
-		if (shfi.hIcon != 0) {
-			Image image = Image.win32_new (null, SWT.ICON, shfi.hIcon, initialNativeZoom);
-			ImageData imageData = image.getImageData (zoom);
-			image.dispose ();
+		if (shfi.iIcon >= 0) {
+			Image icon = getImageForZoom(zoom, shfi.iIcon);
+			ImageData imageData = icon.getImageData(zoom);
+			icon.dispose();
 			return imageData;
 		}
 	}
@@ -432,6 +427,52 @@ private int getPrimaryMonitorZoomAtStartup() {
 	int dpi = OS.GetDeviceCaps(hDC, OS.LOGPIXELSX);
 	OS.ReleaseDC(0, hDC);
 	return DPIUtil.mapDPIToZoom(dpi);
+}
+
+private static int ICON_SIZE_AT_100 = 0x3;
+
+private NavigableMap<Integer, Long> getImageListForAllZoomLevel() {
+	TreeMap<Integer, Long> zoomToHImageList = new TreeMap<>();
+	int [] allSizes = new int [] {0x0, 0x1, 0x2};
+	long hImageListAt100 = getImageListForSize(ICON_SIZE_AT_100);
+	int sizeAt100 = getIconSizeOfImageList(hImageListAt100);
+	zoomToHImageList.put(100, hImageListAt100);
+	for (int size : allSizes) {
+		long hImageList = getImageListForSize(size);
+		int iconSize = getIconSizeOfImageList(hImageList);
+		int zoom = (iconSize / sizeAt100) * 100;
+		zoomToHImageList.put(zoom, hImageList);
+	}
+	return zoomToHImageList;
+}
+
+private int getIconSizeOfImageList(long hImageList) {
+	int [] cx = new int [1];
+	int [] cy = new int [1];
+	OS.ImageList_GetIconSize(hImageList, cx, cy);
+	return cx[0];
+}
+
+private Image getImageForZoom(int zoom, int index) {
+	NavigableMap<Integer, Long> zoomToHImageList = getImageListForAllZoomLevel();
+	int closestHImageList = getClosestKey(zoomToHImageList, zoom);
+	long hIcon = OS.ImageList_GetIcon(zoomToHImageList.get(closestHImageList), index, OS.ILD_TRANSPARENT);
+	getImageListForAllZoomLevel().values().forEach(handle -> OS.ImageList_Destroy(handle));
+	return Image.win32_new(Display.getCurrent(), SWT.ICON, hIcon, zoom);
+}
+
+private long getImageListForSize(int size) {
+	long [] ppv = new long [1];
+	COM.SHGetImageList(size, COM.IID_IImageList, ppv);
+	return ppv[0];
+}
+
+private Integer getClosestKey(NavigableMap<Integer, Long> map, int x) {
+    Integer floorKey = map.floorKey(x);
+    Integer ceilingKey = map.ceilingKey(x);
+    if (floorKey == null) return ceilingKey;
+    if (ceilingKey == null) return floorKey;
+    return (Math.abs(x - floorKey) <= Math.abs(x - ceilingKey)) ? floorKey : ceilingKey;
 }
 
 /**
