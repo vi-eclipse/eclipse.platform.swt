@@ -4925,21 +4925,25 @@ LRESULT WM_DESTROY (long wParam, long lParam) {
 	return null;
 }
 
+void handleMonitorSpecificDpiChange(int newNativeZoom, Rectangle newBoundsInPixels) {
+	DPIUtil.setDeviceZoom (newNativeZoom);
+
+	float scalingFactor = 1f * DPIUtil.getZoomForAutoscaleProperty(newNativeZoom) / DPIUtil.getZoomForAutoscaleProperty(nativeZoom);
+	DPIZoomChangeRegistry.applyChange(this, newNativeZoom, scalingFactor);
+
+	this.setBoundsInPixels(newBoundsInPixels.y, newBoundsInPixels.y, newBoundsInPixels.width, newBoundsInPixels.height);
+}
+
 LRESULT WM_DPICHANGED (long wParam, long lParam) {
 	// Map DPI to Zoom and compare
 	int newNativeZoom = DPIUtil.mapDPIToZoom (OS.HIWORD (wParam));
+	System.out.println(String.format("WM_DPICHANGED: %s -> %s", nativeZoom, newNativeZoom));
 	if (getDisplay().isRescalingAtRuntime()) {
 		Device.win32_destroyUnusedHandles(getDisplay());
-		int oldNativeZoom = nativeZoom;
-		if (newNativeZoom != oldNativeZoom) {
-			DPIUtil.setDeviceZoom (newNativeZoom);
-
-			float scalingFactor = 1f * DPIUtil.getZoomForAutoscaleProperty(newNativeZoom) / DPIUtil.getZoomForAutoscaleProperty(oldNativeZoom);
-			DPIZoomChangeRegistry.applyChange(this, newNativeZoom, scalingFactor);
-
+		if (newNativeZoom != nativeZoom) {
 			RECT rect = new RECT ();
 			COM.MoveMemory(rect, lParam, RECT.sizeof);
-			this.setBoundsInPixels(rect.left, rect.top, rect.right - rect.left, rect.bottom-rect.top);
+			handleMonitorSpecificDpiChange(newNativeZoom, new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom-rect.top));
 			return LRESULT.ZERO;
 		}
 	} else {

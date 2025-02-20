@@ -2685,6 +2685,19 @@ LRESULT WM_WINDOWPOSCHANGING (long wParam, long lParam) {
 	return result;
 }
 
+@Override
+LRESULT WM_WINDOWPOSCHANGED (long wParam, long lParam) {
+	LRESULT result = super.WM_WINDOWPOSCHANGED(wParam, lParam);
+	if (display.isRescalingAtRuntime()) {
+		int dpiForWindow = DPIUtil.mapDPIToZoom(OS.GetDpiForWindow(getShell().handle));
+		if (dpiForWindow != nativeZoom) {
+			System.out.println(String.format("Zoom change detected: %s -> %s", nativeZoom, dpiForWindow));
+			handleMonitorSpecificDpiChange(dpiForWindow, DPIUtil.scaleUp(getBounds(), dpiForWindow));
+		}
+	}
+	return result;
+}
+
 private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
 	if (!(widget instanceof Shell shell)) {
 		return;
