@@ -27,6 +27,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.function.Consumer;
 
 import org.eclipse.swt.SWT;
@@ -1262,4 +1265,71 @@ public void test_updateWidthHeightAfterDPIChange() {
 		DPIUtil.setDeviceZoom(deviceZoom);
 	}
 }
+
+@Test
+public void test_imageDataFromImageWithAndWithoutHandle() {
+	String imagePath = getPath("collapseall.png");
+	ImageFileNameProvider imageFileNameProvider = __ -> {
+		return imagePath;
+	};
+	Image fileNameProviderImage = new Image(display, imageFileNameProvider);
+	// This is how an image descriptor loads a file
+	ImageDataProvider dataProvider = __ -> {
+		try (InputStream imageStream = Files.newInputStream(Path.of(imagePath))) {
+			return new ImageData(imageStream);
+		} catch (IOException e) {
+		}
+		return null;
+	};
+	Image imageDescriptorImage = new Image(display, dataProvider);
+	ImageData dataFromFileNameProviderImage = fileNameProviderImage.getImageData(100);
+	ImageData dataFromImageDescriptorImage = imageDescriptorImage.getImageData(100);
+	assertEquals(0, imageDataComparator().compare(dataFromFileNameProviderImage, dataFromImageDescriptorImage));
+
+	fileNameProviderImage.dispose();
+	imageDescriptorImage.dispose();
+}
+
+@Test
+public void test_imageDataFromImageWithAndWithoutHandle2() {
+	String imagePath = getPath("collapseall.png");
+	ImageFileNameProvider imageFileNameProvider = __ -> {
+		return imagePath;
+	};
+	Image fileNameProviderImage = new Image(display, imageFileNameProvider);
+	// This is how an image descriptor loads a file
+	ImageDataProvider dataProvider = __ -> {
+		try (InputStream imageStream = Files.newInputStream(Path.of(imagePath))) {
+			return new ImageData(imageStream);
+		} catch (IOException e) {
+		}
+		return null;
+	};
+	Image imageDescriptorImage = new Image(display, dataProvider.getImageData(100));
+	ImageData dataFromFileNameProviderImage = fileNameProviderImage.getImageData(100);
+	ImageData dataFromImageDescriptorImage = imageDescriptorImage.getImageData(100);
+	assertEquals(0, imageDataComparator().compare(dataFromFileNameProviderImage, dataFromImageDescriptorImage));
+
+	fileNameProviderImage.dispose();
+	imageDescriptorImage.dispose();
+}
+
+private Comparator<ImageData> imageDataComparator() {
+	return Comparator.<ImageData>comparingInt(d -> d.width) //
+			.thenComparing(d -> d.height) //
+			.thenComparing((ImageData firstData, ImageData secondData) -> {
+				for (int x = 0; x < firstData.width; x++) {
+					for (int y = 0; y < firstData.height; y++) {
+						if (firstData.getPixel(x, y) != secondData.getPixel(x, y)) {
+							return -1;
+						}
+						if (firstData.getAlpha(x, y) != secondData.getAlpha(x, y)) {
+							return -1;
+						}
+					}
+				}
+				return 0;
+			});
+}
+
 }
