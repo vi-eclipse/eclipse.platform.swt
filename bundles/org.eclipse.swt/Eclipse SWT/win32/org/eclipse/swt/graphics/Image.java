@@ -140,7 +140,6 @@ public final class Image extends Resource implements Drawable {
 
 private Image (Device device, int type, long handle, int nativeZoom) {
 	super(device);
-	initialNativeZoom = nativeZoom;
 	this.type = type;
 	this.imageProvider = new ExistingImageHandleProviderWrapper(handle, nativeZoom);
 	this.isInitialized = true;
@@ -237,7 +236,6 @@ public Image(Device device, Image srcImage, int flag) {
 	ImageHandle imageMetadata;
 	if (srcImage == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
 	if (srcImage.isDisposed()) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
-	initialNativeZoom = srcImage.initialNativeZoom;
 	Rectangle rect = srcImage.getBounds(getZoom());
 	this.type = srcImage.type;
 	this.imageProvider = srcImage.imageProvider.createCopy(this);
@@ -336,7 +334,6 @@ public Image(Device device, Image srcImage, int flag) {
 public Image(Device device, Rectangle bounds) {
 	super(device);
 	if (bounds == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
-	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	this.imageProvider = new PlainImageProviderWrapper(bounds.width, bounds.height);
 	init();
 	this.device.registerResourceWithZoomSupport(this);
@@ -368,7 +365,6 @@ public Image(Device device, Rectangle bounds) {
 public Image(Device device, ImageData data) {
 	super(device);
 	if (data == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
-	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	this.imageProvider = new PlainImageDataProviderWrapper(data);
 	init();
 	this.device.registerResourceWithZoomSupport(this);
@@ -411,7 +407,6 @@ public Image(Device device, ImageData source, ImageData mask) {
 	if (source.width != mask.width || source.height != mask.height) {
 		SWT.error(SWT.ERROR_INVALID_ARGUMENT);
 	}
-	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	this.imageProvider = new MaskedImageDataProviderWrapper(source, mask);
 	init();
 	this.device.registerResourceWithZoomSupport(this);
@@ -473,7 +468,6 @@ public Image(Device device, ImageData source, ImageData mask) {
 public Image (Device device, InputStream stream) {
 	super(device);
 	if (stream == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
-	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	this.imageProvider = new ImageDataLoaderStreamProviderWrapper(stream);
 	init();
 	this.device.registerResourceWithZoomSupport(this);
@@ -514,7 +508,6 @@ public Image (Device device, InputStream stream) {
 public Image (Device device, String filename) {
 	super(device);
 	if (filename == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
-	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	this.imageProvider = new ImageFileNameProviderWrapper(zoom -> {
 		if (zoom == 100) {
 			return filename;
@@ -561,7 +554,6 @@ public Image (Device device, String filename) {
 public Image(Device device, ImageFileNameProvider imageFileNameProvider) {
 	super(device);
 	this.imageProvider = new ImageFileNameProviderWrapper(imageFileNameProvider);
-	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	if (imageProvider.getImageData(100) == null) {
 		SWT.error(SWT.ERROR_INVALID_ARGUMENT, null,
 				": ImageFileNameProvider [" + imageFileNameProvider + "] returns null ImageData at 100% zoom.");
@@ -602,7 +594,6 @@ public Image(Device device, ImageFileNameProvider imageFileNameProvider) {
 public Image(Device device, ImageDataProvider imageDataProvider) {
 	super(device);
 	this.imageProvider = new ImageDataProviderWrapper(imageDataProvider);
-	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	if (imageDataProvider.getImageData(100) == null) {
 		SWT.error(SWT.ERROR_INVALID_ARGUMENT, null,
 				": ImageDataProvider [" + imageDataProvider + "] returns null ImageData at 100% zoom.");
@@ -632,7 +623,6 @@ public Image(Device device, ImageDataProvider imageDataProvider) {
 public Image(Device device, ImageGcDrawer imageGcDrawer, int width, int height) {
 	super(device);
 	this.imageProvider = new ImageGcDrawerWrapper(imageGcDrawer, width, height);
-	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	init();
 }
 
