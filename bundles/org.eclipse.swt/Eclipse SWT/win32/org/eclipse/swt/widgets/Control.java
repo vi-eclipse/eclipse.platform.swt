@@ -1755,7 +1755,7 @@ public long internal_new_GC (GCData data) {
 		data.device = display;
 		data.nativeZoom =  getNativeZoom();
 		if (staticZoom != SWT.DEFAULT) {
-			data.nativeZoom = staticZoom;
+			data.staticZoom = staticZoom;
 		}
 		int foreground = getForegroundPixel ();
 		if (foreground != OS.GetTextColor (hDC)) data.foreground = foreground;

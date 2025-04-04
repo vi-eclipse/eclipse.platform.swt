@@ -182,7 +182,7 @@ private Image (Device device, int type, long handle, int nativeZoom) {
  * @see #dispose()
  */
 public Image(Device device, int width, int height) {
-	this(device, width, height, DPIUtil.getNativeDeviceZoom());
+	this(device, width, height, 100);
 }
 
 

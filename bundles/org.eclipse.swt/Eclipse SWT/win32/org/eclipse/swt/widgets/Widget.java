@@ -2708,13 +2708,12 @@ void notifyDisposalTracker() {
 
 GC createNewGC(long hDC, GCData data) {
 	if (staticZoom > 0) {
-		data.nativeZoom = staticZoom;
+		data.staticZoom = staticZoom;
 		if (data.font != null) {
 			data.font = SWTFontProvider.getFont(display, data.font.getFontData()[0], staticZoom);
 		}
-	} else {
-		data.nativeZoom = nativeZoom;
 	}
+	data.nativeZoom = nativeZoom;
 	return GC.win32_new(hDC, data);
 }
 

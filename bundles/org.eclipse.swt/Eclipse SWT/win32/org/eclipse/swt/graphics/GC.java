@@ -454,8 +454,9 @@ void checkGC(int mask) {
 		OS.SetTextColor(handle, data.foreground);
 	}
 	if ((state & FONT) != 0) {
-		long fontHandle = SWTFontProvider.getFontHandle(data.font, data.nativeZoom);
-		OS.SelectObject(handle, fontHandle);
+		Font font = data.font;
+		Font scaledFont = SWTFontProvider.getFontHandle(font, getFontZoom());
+		OS.SelectObject(handle, scaledFont.handle);
 	}
 }
 
@@ -934,14 +935,14 @@ public void drawImage (Image image, int x, int y) {
 	int deviceZoom = getZoom();
 	x = DPIUtil.scaleUp(drawable, x, deviceZoom);
 	y = DPIUtil.scaleUp(drawable, y, deviceZoom);
-	drawImageInPixels(image, x, y);
+	drawImageInPixels(image, x, y, deviceZoom);
 }
 
-void drawImageInPixels(Image image, int x, int y) {
+void drawImageInPixels(Image image, int x, int y, int imageZoom) {
 	if (handle == 0) SWT.error(SWT.ERROR_GRAPHIC_DISPOSED);
 	if (image == null) SWT.error (SWT.ERROR_NULL_ARGUMENT);
 	if (image.isDisposed()) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
-	drawImage(image, 0, 0, -1, -1, x, y, -1, -1, true);
+	drawImage(image, 0, 0, -1, -1, x, y, -1, -1, true, imageZoom);
 }
 
 /**
@@ -986,32 +987,38 @@ public void drawImage (Image image, int srcX, int srcY, int srcWidth, int srcHei
 	if (image.isDisposed()) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
 
 	int deviceZoom = getZoom();
-	Rectangle src = DPIUtil.scaleUp(drawable, new Rectangle(srcX, srcY, srcWidth, srcHeight), deviceZoom);
+	int imageTargetZoom;
+	if (srcWidth == destWidth && srcHeight == destHeight) {
+		imageTargetZoom = deviceZoom;
+	} else {
+		imageTargetZoom = getImageZoom();
+	}
+	Rectangle src = DPIUtil.scaleUp(drawable, new Rectangle(srcX, srcY, srcWidth, srcHeight), imageTargetZoom);
 	Rectangle dest = DPIUtil.scaleUp(drawable, new Rectangle(destX, destY, destWidth, destHeight), deviceZoom);
-	if (deviceZoom != 100) {
+	if (imageTargetZoom != 100) {
 		/*
 		 * This is a HACK! Due to rounding errors at fractional scale factors,
 		 * the coordinates may be slightly off. The workaround is to restrict
 		 * coordinates to the allowed bounds.
 		 */
-		Rectangle b = image.getBounds(deviceZoom);
+		Rectangle b = image.getBounds(imageTargetZoom);
 		int errX = src.x + src.width - b.width;
 		int errY = src.y + src.height - b.height;
 		if (errX != 0 || errY != 0) {
-			if (errX <= deviceZoom / 100 && errY <= deviceZoom / 100) {
+			if (errX <= imageTargetZoom / 100 && errY <= imageTargetZoom / 100) {
 				src.intersect(b);
 			} else {
 				SWT.error (SWT.ERROR_INVALID_ARGUMENT);
 			}
 		}
 	}
-	drawImage(image, src.x, src.y, src.width, src.height, dest.x, dest.y, dest.width, dest.height, false);
+	drawImage(image, src.x, src.y, src.width, src.height, dest.x, dest.y, dest.width, dest.height, false, imageTargetZoom);
 }
 
-void drawImage(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple) {
+void drawImage(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple, int imageZoom) {
 	if (data.gdipGraphics != 0) {
 		//TODO - cache bitmap
-		long [] gdipImage = srcImage.createGdipImage(getZoom());
+		long [] gdipImage = srcImage.createGdipImage(imageZoom);
 		long img = gdipImage[0];
 		int imgWidth = Gdip.Image_GetWidth(img);
 		int imgHeight = Gdip.Image_GetHeight(img);
@@ -1067,15 +1074,15 @@ void drawImage(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, 
 	}
 	switch (srcImage.type) {
 		case SWT.BITMAP:
-			drawBitmap(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple);
+			drawBitmap(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple, imageZoom);
 			break;
 		case SWT.ICON:
-			drawIcon(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple);
+			drawIcon(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple, imageZoom);
 			break;
 	}
 }
 
-void drawIcon(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple) {
+void drawIcon(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple, int imageZoom) {
 	int technology = OS.GetDeviceCaps(handle, OS.TECHNOLOGY);
 
 	boolean drawIcon = true;
@@ -1099,14 +1106,14 @@ void drawIcon(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, i
 	/* Simple case: no stretching, entire icon */
 	if (simple && technology != OS.DT_RASPRINTER && drawIcon) {
 		if (offsetX != 0 || offsetY != 0) OS.SetWindowOrgEx(handle, 0, 0, null);
-		OS.DrawIconEx(handle, destX - offsetX, destY - offsetY, Image.win32_getHandle(srcImage, getZoom()), 0, 0, 0, 0, flags);
+		OS.DrawIconEx(handle, destX - offsetX, destY - offsetY, Image.win32_getHandle(srcImage, imageZoom), 0, 0, 0, 0, flags);
 		if (offsetX != 0 || offsetY != 0) OS.SetWindowOrgEx(handle, offsetX, offsetY, null);
 		return;
 	}
 
 	/* Get the icon info */
 	ICONINFO srcIconInfo = new ICONINFO();
-	OS.GetIconInfo(Image.win32_getHandle(srcImage, getZoom()), srcIconInfo);
+	OS.GetIconInfo(Image.win32_getHandle(srcImage, imageZoom), srcIconInfo);
 
 	/* Get the icon width and height */
 	long hBitmap = srcIconInfo.hbmColor;
@@ -1132,7 +1139,7 @@ void drawIcon(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, i
 		} else if (simple && technology != OS.DT_RASPRINTER) {
 			/* Simple case: no stretching, entire icon */
 			if (offsetX != 0 || offsetY != 0) OS.SetWindowOrgEx(handle, 0, 0, null);
-			OS.DrawIconEx(handle, destX - offsetX, destY - offsetY, Image.win32_getHandle(srcImage, getZoom()), 0, 0, 0, 0, flags);
+			OS.DrawIconEx(handle, destX - offsetX, destY - offsetY, Image.win32_getHandle(srcImage, imageZoom), 0, 0, 0, 0, flags);
 			if (offsetX != 0 || offsetY != 0) OS.SetWindowOrgEx(handle, offsetX, offsetY, null);
 		} else {
 			/* Create the icon info and HDC's */
@@ -1205,9 +1212,9 @@ void drawIcon(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, i
 	if (failed) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
 }
 
-void drawBitmap(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple) {
+void drawBitmap(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple, int imageZoom) {
 	BITMAP bm = new BITMAP();
-	OS.GetObject(Image.win32_getHandle(srcImage, getZoom()), BITMAP.sizeof, bm);
+	OS.GetObject(Image.win32_getHandle(srcImage, imageZoom), BITMAP.sizeof, bm);
 	int imgWidth = bm.bmWidth;
 	int imgHeight = bm.bmHeight;
 	if (simple) {
@@ -1235,19 +1242,19 @@ void drawBitmap(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight,
 	boolean isDib = bm.bmBits != 0;
 	int depth = bm.bmPlanes * bm.bmBitsPixel;
 	if (isDib && depth == 32) {
-		drawBitmapAlpha(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple);
+		drawBitmapAlpha(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple, imageZoom);
 	} else if (srcImage.transparentPixel != -1) {
-		drawBitmapTransparent(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple, bm, imgWidth, imgHeight);
+		drawBitmapTransparent(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple, bm, imgWidth, imgHeight, imageZoom);
 	} else {
-		drawBitmapColor(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple);
+		drawBitmapColor(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple, imageZoom);
 	}
 	if (mustRestore) {
-		long hOldBitmap = OS.SelectObject(memGC.handle, Image.win32_getHandle(srcImage, getZoom()));
+		long hOldBitmap = OS.SelectObject(memGC.handle, Image.win32_getHandle(srcImage, imageZoom));
 		memGC.data.hNullBitmap = hOldBitmap;
 	}
 }
 
-void drawBitmapAlpha(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple) {
+void drawBitmapAlpha(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple, int imageZoom) {
 	boolean alphaBlendSupport = true;
 	boolean isPrinter = OS.GetDeviceCaps(handle, OS.TECHNOLOGY) == OS.DT_RASPRINTER;
 	int sourceAlpha = -1;
@@ -1255,7 +1262,7 @@ void drawBitmapAlpha(Image srcImage, int srcX, int srcY, int srcWidth, int srcHe
 		int caps = OS.GetDeviceCaps(handle, OS.SHADEBLENDCAPS);
 		if (caps != 0) {
 			long srcHdc = OS.CreateCompatibleDC(handle);
-			long oldSrcBitmap = OS.SelectObject(srcHdc, Image.win32_getHandle(srcImage, getZoom()));
+			long oldSrcBitmap = OS.SelectObject(srcHdc, Image.win32_getHandle(srcImage, imageZoom));
 			long memDib = Image.createDIB(srcWidth, srcHeight, 32);
 			if (memDib == 0) SWT.error(SWT.ERROR_NO_HANDLES);
 			long memHdc = OS.CreateCompatibleDC(handle);
@@ -1282,7 +1289,7 @@ void drawBitmapAlpha(Image srcImage, int srcX, int srcY, int srcWidth, int srcHe
 			if (sourceAlpha != -1) {
 				if (sourceAlpha == 0) return;
 				if (sourceAlpha == 255) {
-					drawBitmapColor(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple);
+					drawBitmapColor(srcImage, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple, imageZoom);
 					return;
 				}
 				alphaBlendSupport = (caps & OS.SB_CONST_ALPHA) != 0;
@@ -1296,7 +1303,7 @@ void drawBitmapAlpha(Image srcImage, int srcX, int srcY, int srcWidth, int srcHe
 		BLENDFUNCTION blend = new BLENDFUNCTION();
 		blend.BlendOp = OS.AC_SRC_OVER;
 		long srcHdc = OS.CreateCompatibleDC(handle);
-		long oldSrcBitmap = OS.SelectObject(srcHdc, Image.win32_getHandle(srcImage, getZoom()));
+		long oldSrcBitmap = OS.SelectObject(srcHdc, Image.win32_getHandle(srcImage, imageZoom));
 		blend.SourceConstantAlpha = (byte)sourceAlpha;
 		blend.AlphaFormat = OS.AC_SRC_ALPHA;
 		OS.AlphaBlend(handle, destX, destY, destWidth, destHeight, srcHdc, srcX, srcY, srcWidth, srcHeight, blend);
@@ -1329,7 +1336,7 @@ void drawBitmapAlpha(Image srcImage, int srcX, int srcY, int srcWidth, int srcHe
 
 	/* Create resources */
 	long srcHdc = OS.CreateCompatibleDC(handle);
-	long oldSrcBitmap = OS.SelectObject(srcHdc, Image.win32_getHandle(srcImage, getZoom()));
+	long oldSrcBitmap = OS.SelectObject(srcHdc, Image.win32_getHandle(srcImage, imageZoom));
 	long memHdc = OS.CreateCompatibleDC(handle);
 	long memDib = Image.createDIB(Math.max(srcWidth, destWidth), Math.max(srcHeight, destHeight), 32);
 	if (memDib == 0) SWT.error(SWT.ERROR_NO_HANDLES);
@@ -1497,11 +1504,11 @@ void drawBitmapMask(Image srcImage, long srcColor, long srcMask, int srcX, int s
 	OS.DeleteDC(srcHdc);
 }
 
-void drawBitmapTransparent(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple, BITMAP bm, int imgWidth, int imgHeight) {
+void drawBitmapTransparent(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple, BITMAP bm, int imgWidth, int imgHeight, int imageZoom) {
 
 	/* Find the RGB values for the transparent pixel. */
 	boolean isDib = bm.bmBits != 0;
-	long hBitmap = Image.win32_getHandle(srcImage, getZoom());
+	long hBitmap = Image.win32_getHandle(srcImage, imageZoom);
 	long srcHdc = OS.CreateCompatibleDC(handle);
 	long oldSrcBitmap = OS.SelectObject(srcHdc, hBitmap);
 	byte[] originalColors = null;
@@ -1546,7 +1553,7 @@ void drawBitmapTransparent(Image srcImage, int srcX, int srcY, int srcWidth, int
 				bmiHeader.biBitCount = bm.bmBitsPixel;
 				byte[] bmi = new byte[BITMAPINFOHEADER.sizeof + numColors * 4];
 				OS.MoveMemory(bmi, bmiHeader, BITMAPINFOHEADER.sizeof);
-				OS.GetDIBits(srcHdc, Image.win32_getHandle(srcImage, getZoom()), 0, 0, null, bmi, OS.DIB_RGB_COLORS);
+				OS.GetDIBits(srcHdc, Image.win32_getHandle(srcImage, imageZoom), 0, 0, null, bmi, OS.DIB_RGB_COLORS);
 				int offset = BITMAPINFOHEADER.sizeof + 4 * srcImage.transparentPixel;
 				transRed = bmi[offset + 2] & 0xFF;
 				transGreen = bmi[offset + 1] & 0xFF;
@@ -1619,13 +1626,13 @@ void drawBitmapTransparent(Image srcImage, int srcX, int srcY, int srcWidth, int
 		OS.DeleteObject(maskBitmap);
 	}
 	OS.SelectObject(srcHdc, oldSrcBitmap);
-	if (hBitmap != Image.win32_getHandle(srcImage, getZoom())) OS.DeleteObject(hBitmap);
+	if (hBitmap != Image.win32_getHandle(srcImage, imageZoom)) OS.DeleteObject(hBitmap);
 	OS.DeleteDC(srcHdc);
 }
 
-void drawBitmapColor(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple) {
+void drawBitmapColor(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, int destX, int destY, int destWidth, int destHeight, boolean simple, int imageZoom) {
 	long srcHdc = OS.CreateCompatibleDC(handle);
-	long oldSrcBitmap = OS.SelectObject(srcHdc, Image.win32_getHandle(srcImage, getZoom()));
+	long oldSrcBitmap = OS.SelectObject(srcHdc, Image.win32_getHandle(srcImage, imageZoom));
 	int dwRop = OS.GetROP2(handle) == OS.R2_XORPEN ? OS.SRCINVERT : OS.SRCCOPY;
 	if (!simple && (srcWidth != destWidth || srcHeight != destHeight)) {
 		int mode = OS.SetStretchBltMode(handle, OS.COLORONCOLOR);
@@ -3470,7 +3477,7 @@ public FontMetrics getFontMetrics() {
 	checkGC(FONT);
 	TEXTMETRIC lptm = new TEXTMETRIC();
 	OS.GetTextMetrics(handle, lptm);
-	return FontMetrics.win32_new(lptm, data.nativeZoom);
+	return FontMetrics.win32_new(lptm, getFontZoom());
 }
 
 /**
@@ -3861,7 +3868,7 @@ long identity() {
 			Image image = data.image;
 			if (image != null) {
 				BITMAP bm = new BITMAP();
-				OS.GetObject(Image.win32_getHandle(image, getZoom()), BITMAP.sizeof, bm);
+				OS.GetObject(Image.win32_getHandle(image, getImageZoom()), BITMAP.sizeof, bm);
 				width = bm.bmWidth;
 			} else {
 				long hwnd = OS.WindowFromDC(handle);
@@ -4399,7 +4406,7 @@ public void setFillRule(int rule) {
 public void setFont (Font font) {
 	if (handle == 0) SWT.error(SWT.ERROR_GRAPHIC_DISPOSED);
 	if (font != null && font.isDisposed()) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
-	data.font = font != null ? SWTFontProvider.getFont(device, font.getFontData()[0], data.nativeZoom) : SWTFontProvider.getSystemFont(device, data.nativeZoom);
+	data.font = font != null ? SWTFontProvider.getFont(device, font.getFontData()[0], getFontZoom()) : SWTFontProvider.getSystemFont(device, getFontZoom());
 	data.state &= ~FONT;
 }
 
@@ -5135,8 +5142,25 @@ private static int sin(int angle, int length) {
 	return (int)(Math.sin(angle * (Math.PI/180)) * length);
 }
 
-private int getZoom() {
+private int getImageZoom() {
 	return DPIUtil.getZoomForAutoscaleProperty(data.nativeZoom);
+}
+
+private int getFontZoom() {
+	if (data.staticZoom > 0) {
+		return data.staticZoom;
+	}
+	return data.nativeZoom;
+}
+
+private int getZoom() {
+	int zoom;
+	if (data.staticZoom > 0) {
+		zoom = data.staticZoom;
+	} else {
+		zoom = data.nativeZoom;
+	}
+	return DPIUtil.getZoomForAutoscaleProperty(zoom);
 }
 
 }
