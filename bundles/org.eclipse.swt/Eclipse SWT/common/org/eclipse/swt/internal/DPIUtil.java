@@ -455,6 +455,21 @@ public static Rectangle autoScaleUp(Rectangle rect) {
 }
 
 public static Rectangle scaleUp(Rectangle rect, int zoom) {
+	boolean old = false;
+
+	if (old)
+		return scaleUpOld(rect, zoom);
+
+	if (zoom == 100 || rect == null)
+		return rect;
+
+	return new Rectangle(DPIUtil.scaleUp(rect.x, zoom), //
+			DPIUtil.scaleUp(rect.y, zoom), //
+			DPIUtil.scaleUp(rect.width, zoom), //
+			DPIUtil.scaleUp(rect.height, zoom));
+}
+
+private static Rectangle scaleUpOld(Rectangle rect, int zoom) {
 	if (zoom == 100 || rect == null) return rect;
 	Rectangle scaledRect = new Rectangle(0,0,0,0);
 	Point scaledTopLeft = scaleUp (new Point(rect.x, rect.y), zoom);
@@ -466,7 +481,6 @@ public static Rectangle scaleUp(Rectangle rect, int zoom) {
 	scaledRect.height = scaledBottomRight.y - scaledTopLeft.y;
 	return scaledRect;
 }
-
 /**
  * Returns a new scaled up Rectangle if enabled for Drawable class.
  */
