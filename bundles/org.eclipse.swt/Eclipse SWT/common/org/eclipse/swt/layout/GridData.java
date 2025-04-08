@@ -490,6 +490,9 @@ void computeSize (Control control, int wHint, int hHint, boolean flushCache) {
 	if (cacheWidth != -1 && cacheHeight != -1) return;
 	if (wHint == this.widthHint && hHint == this.heightHint) {
 		if (defaultWidth == -1 || defaultHeight == -1 || wHint != defaultWhint || hHint != defaultHhint) {
+			if (isOptionsArea(control))
+				System.out.println(">> Recomputing...");
+
 			Point size = control.computeSize (wHint, hHint, flushCache);
 			defaultWhint = wHint;
 			defaultHhint = hHint;
@@ -498,17 +501,27 @@ void computeSize (Control control, int wHint, int hHint, boolean flushCache) {
 		}
 		cacheWidth = defaultWidth;
 		cacheHeight = defaultHeight;
+		if (isOptionsArea(control))
+			System.out.println(">> defaultHeight=" + defaultHeight);
 		return;
 	}
 	if (currentWidth == -1 || currentHeight == -1 || wHint != currentWhint || hHint != currentHhint) {
+		if (isOptionsArea(control))
+			System.out.println("Recomputing...");
 		Point size = control.computeSize (wHint, hHint, flushCache);
 		currentWhint = wHint;
 		currentHhint = hHint;
 		currentWidth = size.x;
 		currentHeight = size.y;
 	}
+	if (isOptionsArea(control))
+		System.out.println("currentHeight=" + currentHeight);
 	cacheWidth = currentWidth;
 	cacheHeight = currentHeight;
+}
+
+private boolean isOptionsArea(Control control) {
+	return control instanceof Composite cmp && cmp.getChildren().length == 6;
 }
 
 void flushCache () {

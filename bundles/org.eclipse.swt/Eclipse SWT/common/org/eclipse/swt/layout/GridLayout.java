@@ -694,6 +694,8 @@ Point layout (Composite composite, boolean move, int x, int y, int width, int he
 					}
 					Control child = grid [i][j];
 					if (child != null) {
+						if (isOptionsArea(child))
+							System.out.println("child.setBounds (" + childX + ", " + childY + ", " + childWidth + ", " + childHeight + ");");
 						child.setBounds (childX, childY, childWidth, childHeight);
 					}
 				}
@@ -721,6 +723,9 @@ Point layout (Composite composite, boolean move, int x, int y, int width, int he
 	return new Point (totalDefaultWidth, totalDefaultHeight);
 }
 
+private boolean isOptionsArea(Control control) {
+	return control instanceof Composite cmp && cmp.getChildren().length == 6;
+}
 String getName () {
 	String string = getClass ().getName ();
 	int index = string.lastIndexOf ('.');

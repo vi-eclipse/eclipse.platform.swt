@@ -81,6 +81,7 @@ public abstract class Control extends Widget implements Drawable {
 	Region region;
 	Font font;
 	int drawCount, foreground, background, backgroundAlpha = 255;
+	private boolean bug;
 
 /**
  * Prevents uninitialized instances from being created outside the package.
@@ -3173,7 +3174,46 @@ void setBackgroundPixel (int pixel) {
  * </ul>
  */
 public void setBounds(int x, int y, int width, int height) {
-	setBounds(new Rectangle(x, y, width, height));
+	bug = true;
+
+	if (bug) {
+		setBounds(new Rectangle(x, y, width, height));
+
+//		checkWidget();
+//		Rectangle r = new Rectangle(x, y, width, height);
+//		Rectangle scaleBounds = DPIUtil.scaleBounds( r, getZoom(), 100);
+//		Rectangle scaleUp = DPIUtil.scaleUp(r, getZoom());
+//
+//		if (!scaleUp.equals(scaleBounds))
+//			System.out.println("DIFFERENT! " + substract(scaleUp, scaleBounds));
+//
+//		r = scaleUp;
+//		setBoundsInPixels(r.x, r.y, r.width, r.height);
+	} else {
+		checkWidget();
+		Rectangle r = new Rectangle(x, y, width, height);
+
+		Rectangle scaleBounds = DPIUtil.scaleBounds( r, getZoom(), 100);
+
+
+		int zoom = getZoom();
+		x = DPIUtil.scaleUp(x, zoom);
+		y = DPIUtil.scaleUp(y, zoom);
+		width = DPIUtil.scaleUp(width, zoom);
+		height = DPIUtil.scaleUp(height, zoom);
+
+		r = new Rectangle(x, y, width, height);
+		if (!r.equals(scaleBounds))
+			System.out.println("DIFFERENT! " + substract(r, scaleBounds));
+		setBoundsInPixels(scaleBounds);
+	}
+}
+
+/**
+ * @return a new rectangle: <code>a - b</code>.
+ */
+private Rectangle substract(Rectangle a, Rectangle b) {
+	return new Rectangle(a.x - b.x, a.y - b.y, a.width - b.width, a.height - b.height);
 }
 
 void setBoundsInPixels (int x, int y, int width, int height) {
@@ -3184,8 +3224,12 @@ void setBoundsInPixels (int x, int y, int width, int height) {
 void setBoundsInPixels (int x, int y, int width, int height, int flags) {
 	setBoundsInPixels (x, y, width, height, flags, true);
 }
-
+private boolean isOptionsArea(Control control) {
+	return control instanceof Composite cmp && cmp.getChildren().length == 6;
+}
 void setBoundsInPixels (int x, int y, int width, int height, int flags, boolean defer) {
+	if (isOptionsArea(this))
+		System.out.println("(" + bug + ") Control.setBoundsInPixels(" + x + ", " + y + ", " + width + ", " + height + ", " + flags + ", " + defer + ")");
 	if (findImageControl () != null) {
 		if (backgroundImage == null) flags |= OS.SWP_NOCOPYBITS;
 	} else {
