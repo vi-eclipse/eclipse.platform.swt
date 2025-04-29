@@ -47,7 +47,7 @@ public class DPIUtil {
 	private static AutoScaleMethod autoScaleMethod = AutoScaleMethod.NEAREST;
 
 	private static String autoScaleValue;
-	private static boolean useCairoAutoScale = false;
+	private static final boolean USE_CAIRO_AUTOSCALE = SWT.getPlatform().equals("gtk");
 
 	/**
 	 * System property that controls the autoScale functionality.
@@ -257,6 +257,17 @@ public static Rectangle scaleDown(Rectangle rect, int zoom) {
 	scaledRect.y = scaledTopLeft.y;
 	scaledRect.width = scaledBottomRight.x - scaledTopLeft.x;
 	scaledRect.height = scaledBottomRight.y - scaledTopLeft.y;
+
+	int scaledDownWidth = DPIUtil.scaleDown(rect.width, zoom);
+	int scaledDownHeight = DPIUtil.scaleDown(rect.height, zoom);
+
+	// It must be ensured, that a scaled down width or height
+	// based on Rectangle x or y is not bigger than directly
+	// scaling down the width or height. Therefore the min
+	// value is used
+	scaledRect.width = Math.min(scaledRect.width, scaledDownWidth);
+	scaledRect.height = Math.min(scaledRect.height, scaledDownHeight);
+
 	return scaledRect;
 }
 /**
@@ -301,11 +312,7 @@ private static ImageData autoScaleImageData (Device device, final ImageData imag
 		Image resultImage = new Image (device, (ImageDataProvider) zoom -> resultData);
 		GC gc = new GC (resultImage);
 		gc.setAntialias (SWT.ON);
-		gc.drawImage (original, 0, 0, autoScaleDown (width), autoScaleDown (height),
-				/* E.g. destWidth here is effectively DPIUtil.autoScaleDown (scaledWidth), but avoiding rounding errors.
-				 * Nevertheless, we still have some rounding errors due to the point-based API GC#drawImage(..).
-				 */
-				0, 0, Math.round (autoScaleDown (width * scaleFactor)), Math.round (autoScaleDown (height * scaleFactor)));
+		Image.drawScaled(gc, original, width, height, scaleFactor);
 		gc.dispose ();
 		original.dispose ();
 		ImageData result = resultImage.getImageData (getDeviceZoom ());
@@ -464,6 +471,16 @@ public static Rectangle scaleUp(Rectangle rect, int zoom) {
 	scaledRect.y = scaledTopLeft.y;
 	scaledRect.width = scaledBottomRight.x - scaledTopLeft.x;
 	scaledRect.height = scaledBottomRight.y - scaledTopLeft.y;
+
+	int scaledUpWidth = DPIUtil.scaleUp(rect.width, zoom);
+	int scaledUpHeight = DPIUtil.scaleUp(rect.height, zoom);
+
+	// It must be ensured, that a scaled up width or height
+	// based on Rectangle x or y is not smaller that directly
+	// scaling up the width or height. Therefore the max
+	// value is used
+	scaledRect.width = Math.max(scaledRect.width, scaledUpWidth);
+	scaledRect.height = Math.max(scaledRect.height, scaledUpHeight);
 	return scaledRect;
 }
 
@@ -484,7 +501,7 @@ public static Rectangle scaleUp(Drawable drawable, Rectangle rect, int zoom) {
  * @return float scaling factor
  */
 private static float getScalingFactor(int zoom) {
-	if (useCairoAutoScale) {
+	if (USE_CAIRO_AUTOSCALE) {
 		return 1;
 	}
 	if (zoom <= 0) {
@@ -631,14 +648,6 @@ private static boolean sholdUseSmoothScaling() {
 	};
 }
 
-public static void setUseCairoAutoScale (boolean cairoAutoScale) {
-	useCairoAutoScale = cairoAutoScale;
-}
-
-public static boolean useCairoAutoScale() {
-	return useCairoAutoScale;
-}
-
 public static int getZoomForAutoscaleProperty (int nativeDeviceZoom) {
 	return getZoomForAutoscaleProperty(nativeDeviceZoom, autoScaleValue);
 }
@@ -675,10 +684,12 @@ private static int getZoomForAutoscaleProperty (int nativeDeviceZoom, String aut
 public static void runWithAutoScaleValue(String autoScaleValue, Runnable runnable) {
 	String initialAutoScaleValue = DPIUtil.autoScaleValue;
 	DPIUtil.autoScaleValue = autoScaleValue;
+	DPIUtil.deviceZoom = getZoomForAutoscaleProperty(nativeDeviceZoom);
 	try {
 		runnable.run();
 	} finally {
 		DPIUtil.autoScaleValue = initialAutoScaleValue;
+		DPIUtil.deviceZoom = getZoomForAutoscaleProperty(nativeDeviceZoom);
 	}
 }
 
