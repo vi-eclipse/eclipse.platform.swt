@@ -99,6 +99,11 @@ public final class Image extends Resource implements Drawable {
 	private boolean isInitialized;
 
 	/**
+	 * this field is used to mark destroyed images
+	 */
+	private boolean isDestroyed;
+
+	/**
 	 * specifies the transparent pixel
 	 */
 	int transparentPixel = -1, transparentColor = -1;
@@ -521,10 +526,6 @@ public Image (Device device, String filename) {
 		}
 		return null;
 	});
-	if (imageProvider.getImageData(100) == null) {
-		SWT.error(SWT.ERROR_INVALID_ARGUMENT, null,
-				": [" + filename + "] returns null ImageData at 100% zoom.");
-	}
 	init();
 	this.device.registerResourceWithZoomSupport(this);
 }
@@ -562,9 +563,9 @@ public Image(Device device, ImageFileNameProvider imageFileNameProvider) {
 	super(device);
 	this.imageProvider = new ImageFileNameProviderWrapper(imageFileNameProvider);
 	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
-	if (imageProvider.getImageData(100) == null) {
+	if (imageFileNameProvider.getImagePath(100) == null) {
 		SWT.error(SWT.ERROR_INVALID_ARGUMENT, null,
-				": ImageFileNameProvider [" + imageFileNameProvider + "] returns null ImageData at 100% zoom.");
+				": ImageFileNameProvider [" + imageFileNameProvider + "] returns null fileName at 100% zoom.");
 	}
 	init();
 	this.device.registerResourceWithZoomSupport(this);
@@ -1003,7 +1004,7 @@ long [] createGdipImage(Integer zoom) {
 void destroy () {
 	device.deregisterResourceWithZoomSupport(this);
 	if (memGC != null) memGC.dispose();
-	this.imageProvider.destroy();
+	this.isDestroyed = true;
 	destroyHandle();
 	memGC = null;
 }
@@ -1229,7 +1230,10 @@ public ImageData getImageData() {
  */
 public ImageData getImageData (int zoom) {
 	if (isDisposed()) SWT.error(SWT.ERROR_GRAPHIC_DISPOSED);
-	return imageProvider.getImageData(zoom);
+	if (zoomLevelToImageHandle.containsKey(zoom)) {
+		return zoomLevelToImageHandle.get(zoom).getImageData();
+	}
+	return this.imageProvider.newImageData(zoom);
 }
 
 
@@ -1766,7 +1770,7 @@ public void internal_dispose_GC (long hDC, GCData data) {
  */
 @Override
 public boolean isDisposed() {
-	return this.imageProvider.isDisposed();
+	return !isInitialized || isDestroyed;
 }
 
 /**
@@ -1850,16 +1854,8 @@ public static Image win32_new(Device device, int type, long handle, int nativeZo
 }
 
 private abstract class AbstractImageProviderWrapper {
-	private boolean isDestroyed;
 
 	protected abstract Rectangle getBounds(int zoom);
-
-	protected final ImageData getImageData(int zoom) {
-		if (zoomLevelToImageHandle.containsKey(zoom)) {
-			return zoomLevelToImageHandle.get(zoom).getImageData();
-		}
-		return newImageData(zoom);
-	}
 
 	abstract ImageData newImageData(int zoom);
 
@@ -1891,14 +1887,6 @@ private abstract class AbstractImageProviderWrapper {
 		} else {
 			return init(data, zoom);
 		}
-	}
-
-	protected boolean isDisposed() {
-		return !isInitialized || isDestroyed;
-	}
-
-	protected void destroy() {
-		this.isDestroyed = true;
 	}
 }
 
@@ -1944,7 +1932,7 @@ private abstract class ImageFromImageDataProviderWrapper extends AbstractImagePr
 	void initImage() {
 		// As the init call configured some Image attributes (e.g. type)
 		// it must be called
-		getImageData(100);
+		newImageData(100);
 	}
 
 	@Override
@@ -2221,6 +2209,9 @@ private abstract class BaseImageProviderWrapper<T> extends DynamicImageProviderW
 private class ImageFileNameProviderWrapper extends BaseImageProviderWrapper<ImageFileNameProvider> {
 	ImageFileNameProviderWrapper(ImageFileNameProvider provider) {
 		super(provider, ImageFileNameProvider.class);
+		// Checks for the contract of the passed provider require
+		// checking for valid image data creation
+		newImageData(DPIUtil.getDeviceZoom());
 	}
 
 	@Override
