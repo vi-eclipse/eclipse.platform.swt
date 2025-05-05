@@ -883,18 +883,21 @@ public Rectangle getClientArea() {
 	checkWidget();
 	//TODO: HACK - find a better way to get padding
 	Rectangle trim = renderer.computeTrim(CTabFolderRenderer.PART_BODY, SWT.FILL, 0, 0, 0, 0);
-	Point size = getSize();
-	int wrapHeight = getWrappedHeight(size);
+	Rectangle bounds = getBounds();
+	int wrapHeight = DPIUtil.scaleUp(getWrappedHeight(new Point(bounds.width, bounds.height)), nativeZoom);
+	trim = DPIUtil.scaleUpBounds(trim, nativeZoom);
+	bounds = DPIUtil.scaleUpBounds(bounds, nativeZoom);
 	if (onBottom) {
 		trim.height += wrapHeight;
 	} else {
+//		if(wrapHeight == 0) wrapHeight = 1;
 		trim.y -= wrapHeight;
 		trim.height += wrapHeight;
 	}
 	if (minimized) return new Rectangle(-trim.x, -trim.y, 0, 0);
-	int width = size.x - trim.width;
-	int height = size.y - trim.height;
-	return new Rectangle(-trim.x, -trim.y, width, height);
+	int width = bounds.width - trim.width;
+	int height = bounds.height - trim.height;
+	return DPIUtil.scaleDownBounds(new Rectangle(-trim.x, -trim.y, width, height), nativeZoom);
 }
 
 /**

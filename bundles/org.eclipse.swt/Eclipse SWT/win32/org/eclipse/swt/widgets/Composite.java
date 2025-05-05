@@ -1063,6 +1063,7 @@ void setBoundsInPixels (int x, int y, int width, int height, int flags, boolean 
 		state &= ~(RESIZE_OCCURRED | MOVE_OCCURRED);
 		state |= RESIZE_DEFERRED | MOVE_DEFERRED;
 	}
+	System.out.println(height);
 	super.setBoundsInPixels (x, y, width, height, flags, defer);
 	if (!defer && (state & CANVAS) != 0) {
 		boolean wasMoved = (state & MOVE_OCCURRED) != 0;
@@ -1539,7 +1540,7 @@ LRESULT WM_PAINT (long wParam, long lParam) {
 
 					Event event = new Event ();
 					event.gc = gc;
-					event.setBounds(DPIUtil.scaleDown(new Rectangle(ps.left, ps.top, width, height), getZoom()));
+					event.setBounds(DPIUtil.scaleDownBounds(new Rectangle(ps.left, ps.top, width, height), getZoom()));
 					sendEvent (SWT.Paint, event);
 					if (data.focusDrawn && !isDisposed ()) updateUIState ();
 					gc.dispose ();

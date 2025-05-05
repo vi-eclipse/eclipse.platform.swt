@@ -1199,7 +1199,7 @@ int getBorderWidthInPixels () {
  */
 public Rectangle getBounds (){
 	checkWidget ();
-	return DPIUtil.scaleDown(getBoundsInPixels (), getZoom());
+	return DPIUtil.scaleDownBounds(getBoundsInPixels (), getZoom());
 }
 
 Rectangle getBoundsInPixels () {
@@ -2452,7 +2452,7 @@ public void redraw (int x, int y, int width, int height, boolean all) {
 	checkWidget ();
 	int zoom = getZoom();
 	if (width <= 0 || height <= 0) return;
-	Rectangle rectangle = DPIUtil.scaleUp(new Rectangle(x, y, width, height), zoom);
+	Rectangle rectangle = DPIUtil.scaleUpBounds(new Rectangle(x, y, width, height), zoom);
 
 	RECT rect = new RECT ();
 	OS.SetRect (rect, rectangle.x, rectangle.y, rectangle.x + rectangle.width, rectangle.y + rectangle.height);
@@ -3259,7 +3259,7 @@ void setBoundsInPixels (int x, int y, int width, int height, int flags, boolean 
 public void setBounds (Rectangle rect) {
 	checkWidget ();
 	if (rect == null) error (SWT.ERROR_NULL_ARGUMENT);
-	setBoundsInPixels(DPIUtil.scaleUp(rect, getZoom()));
+	setBoundsInPixels(DPIUtil.scaleUpBounds(rect, getZoom()));
 }
 
 void setBoundsInPixels (Rectangle rect) {
@@ -5475,7 +5475,7 @@ LRESULT WM_SETCURSOR (long wParam, long lParam) {
 		if (control == null) return null;
 		Cursor cursor = control.findCursor ();
 		if (cursor != null) {
-			OS.SetCursor (Cursor.win32_getHandle(cursor, getNativeZoom()));
+			OS.SetCursor (Cursor.win32_getHandle(cursor, getZoom()));
 			return LRESULT.ONE;
 		}
 	}
