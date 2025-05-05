@@ -18,6 +18,7 @@ import static org.eclipse.swt.internal.image.ImageColorTransformer.DEFAULT_DISAB
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.*;
 import java.util.function.*;
 
 import org.eclipse.swt.*;
@@ -375,6 +376,15 @@ public Image(Device device, ImageData data) {
 	if (data == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
 	initialNativeZoom = DPIUtil.getNativeDeviceZoom();
 	this.imageProvider = new PlainImageDataProviderWrapper(data);
+	init();
+	this.device.registerResourceWithZoomSupport(this);
+}
+
+private Image(Device device, ImageData data, int zoom) {
+	super(device);
+	if (data == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
+	initialNativeZoom = zoom;
+	this.imageProvider = new PlainImageDataProviderWrapper(data, zoom);
 	init();
 	this.device.registerResourceWithZoomSupport(this);
 }
@@ -1005,40 +1015,30 @@ void destroy () {
 	device.deregisterResourceWithZoomSupport(this);
 	if (memGC != null) memGC.dispose();
 	this.isDestroyed = true;
-	destroyHandle();
+	destroyHandles();
 	memGC = null;
 }
 
-private void destroyHandle () {
-	for (ImageHandle imageMetadata : zoomLevelToImageHandle.values()) {
-		destroyHandle(imageMetadata.handle);
-	}
-	zoomLevelToImageHandle.clear();
+private void destroyHandles() {
+	destroyHandles(__ -> true);
 }
 
 @Override
 void destroyHandlesExcept(Set<Integer> zoomLevels) {
-	zoomLevelToImageHandle.entrySet().removeIf(entry -> {
-		final Integer zoom = entry.getKey();
-		if (!zoomLevels.contains(zoom) && zoom != DPIUtil.getZoomForAutoscaleProperty(initialNativeZoom)) {
-			destroyHandle(entry.getValue().handle);
-			return true;
-		}
-		return false;
+	destroyHandles(zoom -> {
+		return !zoomLevels.contains(zoom) && zoom != DPIUtil.getZoomForAutoscaleProperty(initialNativeZoom);
 	});
 }
-private void destroyHandleForZoom(int zoom) {
-	ImageHandle imageHandle = zoomLevelToImageHandle.remove(zoom);
-	if (imageHandle != null) {
-	     destroyHandle(imageHandle.handle);
-	}
-}
 
-private void destroyHandle(long handle) {
-	if (type == SWT.ICON) {
-		OS.DestroyIcon (handle);
-	} else {
-		OS.DeleteObject (handle);
+private void destroyHandles(Predicate<Integer> filter) {
+	Iterator<Entry<Integer, ImageHandle>> it = zoomLevelToImageHandle.entrySet().iterator();
+	while (it.hasNext()) {
+		Entry<Integer, ImageHandle> zoomToHandle = it.next();
+		if (filter.test(zoomToHandle.getKey())) {
+			ImageHandle imageHandle = zoomToHandle.getValue();
+			it.remove();
+			imageHandle.destroy();
+		}
 	}
 }
 
@@ -1940,7 +1940,7 @@ private abstract class ImageFromImageDataProviderWrapper extends AbstractImagePr
 		Function<Integer, ImageData> imageDataRetrieval = zoomToRetrieve -> {
 			ImageHandle handle = initializeHandleFromSource(zoomToRetrieve);
 			ImageData data = handle.getImageData();
-			destroyHandleForZoom(zoomToRetrieve);
+			handle.destroy();
 			return data;
 		};
 		return cachedImageData.computeIfAbsent(zoom, imageDataRetrieval);
@@ -1965,27 +1965,34 @@ private abstract class ImageFromImageDataProviderWrapper extends AbstractImagePr
 }
 
 private class PlainImageDataProviderWrapper extends ImageFromImageDataProviderWrapper {
-	private ImageData imageDataAt100;
+	private ImageData imageDataAtBaseZoom;
+	private int baseZoom;
 
 	PlainImageDataProviderWrapper(ImageData imageData) {
-		this.imageDataAt100 = (ImageData) imageData.clone();
+		this(imageData, 100);
+	}
+
+	private PlainImageDataProviderWrapper(ImageData imageData, int zoom) {
+		this.imageDataAtBaseZoom = (ImageData) imageData.clone();
+		this.baseZoom = zoom;
 		initImage();
 	}
 
 	@Override
 	protected Rectangle getBounds(int zoom) {
-		Rectangle rectangle = new Rectangle(0, 0, imageDataAt100.width, imageDataAt100.height);
+		Rectangle rectangle = new Rectangle(0, 0, imageDataAtBaseZoom.width, imageDataAtBaseZoom.height);
+		rectangle = DPIUtil.scaleDown(rectangle, baseZoom);
 		return DPIUtil.scaleUp(rectangle, zoom);
 	}
 
 	@Override
 	protected ElementAtZoom<ImageData> loadImageData(int zoom) {
-		return new ElementAtZoom<>(imageDataAt100, 100);
+		return new ElementAtZoom<>(imageDataAtBaseZoom, baseZoom);
 	}
 
 	@Override
 	AbstractImageProviderWrapper createCopy(Image image) {
-		return image.new PlainImageDataProviderWrapper(this.imageDataAt100);
+		return image.new PlainImageDataProviderWrapper(this.imageDataAtBaseZoom);
 	}
 }
 
@@ -2174,7 +2181,7 @@ private abstract class BaseImageProviderWrapper<T> extends DynamicImageProviderW
 		Function<Integer, ImageData> imageDataRetrival = zoomToRetrieve -> {
 			ImageHandle handle = initializeHandleFromSource(zoomToRetrieve);
 			ImageData data = handle.getImageData();
-			destroyHandleForZoom(zoomToRetrieve);
+			handle.destroy();
 			return data;
 		};
 		return cachedImageData.computeIfAbsent(zoom, imageDataRetrival);
@@ -2236,7 +2243,7 @@ private class ImageFileNameProviderWrapper extends BaseImageProviderWrapper<Imag
 			imageDataAtZoom = ImageDataLoader.load(fileForZoom.element(), fileForZoom.zoom(), zoom);
 		} else {
 			imageDataAtZoom = new ElementAtZoom<>(nativeInitializedImage.getImageData(), fileForZoom.zoom());
-			destroyHandleForZoom(zoom);
+			nativeInitializedImage.destroy();
 		}
 		return imageDataAtZoom;
 	}
@@ -2487,8 +2494,19 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 	@Override
 	protected ImageHandle newImageHandle(int zoom) {
 		initialNativeZoom = zoom;
-		Image image = new Image(device, width, height, zoom);
-		GC gc = new GC(image, drawer.getGcStyle());
+		int gcStyle = drawer.getGcStyle();
+		Image image;
+		if ((gcStyle & SWT.TRANSPARENT) != 0) {
+			int scaledHeight = DPIUtil.scaleUp(height, zoom);
+			int scaledWidth = DPIUtil.scaleUp(width, zoom);
+			/* Create a 24 bit image data with alpha channel */
+			final ImageData resultData = new ImageData (scaledWidth, scaledHeight, 24, new PaletteData (0xFF, 0xFF00, 0xFF0000));
+			resultData.alphaData = new byte [scaledWidth * scaledHeight];
+			image = new Image(device, resultData, zoom);
+		} else {
+			image = new Image(device, width, height, zoom);
+		}
+		GC gc = new GC(image, gcStyle);
 		try {
 			gc.data.nativeZoom = zoom;
 			drawer.drawOn(gc, width, height);
@@ -2525,7 +2543,7 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 }
 
 private class ImageHandle {
-	private final long handle;
+	private long handle;
 	private final int zoom;
 	private int height;
 	private int width;
@@ -2871,5 +2889,14 @@ private class ImageHandle {
 		return this.handle == 0;
 	}
 
+	private void destroy() {
+		zoomLevelToImageHandle.remove(zoom, this);
+		if (type == SWT.ICON) {
+			OS.DestroyIcon (handle);
+		} else {
+			OS.DeleteObject (handle);
+		}
+		handle = 0;
+	}
 }
 }
