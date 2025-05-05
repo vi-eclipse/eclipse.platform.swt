@@ -1314,7 +1314,6 @@ public Font getFont () {
 	checkWidget ();
 	if (font != null) return font;
 	long hFont = OS.SendMessage (handle, OS.WM_GETFONT, 0, 0);
-	if (hFont == 0) hFont = defaultFont ();
 	return SWTFontProvider.getFont(display, hFont, getNativeZoom());
 }
 

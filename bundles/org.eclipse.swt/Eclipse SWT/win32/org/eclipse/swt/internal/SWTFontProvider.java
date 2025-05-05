@@ -89,6 +89,9 @@ public class SWTFontProvider {
 	 * @param zoom       the zoom for which the font shall be scaled
 	 */
 	public static Font getFont(Device device, long fontHandle, int zoom) {
+		if (fontHandle == 0) {
+			return getFontRegistry(device).getSystemFont(zoom);
+		}
 		return getFontRegistry(device).getFont(fontHandle, zoom);
 	}
 
