@@ -244,41 +244,45 @@ public Image(Device device, Image srcImage, int flag) {
 	if (srcImage == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
 	if (srcImage.isDisposed()) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
 	initialNativeZoom = srcImage.initialNativeZoom;
-	Rectangle rect = srcImage.getBounds(getZoom());
 	this.type = srcImage.type;
 	this.imageProvider = srcImage.imageProvider.createCopy(this);
 	this.styleFlag = srcImage.styleFlag | flag;
-	long srcImageHandle = win32_getHandle(srcImage, getZoom());
 	switch (flag) {
 		case SWT.IMAGE_COPY: {
 			switch (type) {
 				case SWT.BITMAP:
-					/* Get the HDC for the device */
-					long hDC = device.internal_new_GC(null);
+					for (ImageHandle imageHandle : srcImage.zoomLevelToImageHandle.values()) {
+						Rectangle rect = imageHandle.getBounds();
+						long srcImageHandle = imageHandle.handle;
+						/* Get the HDC for the device */
+						long hDC = device.internal_new_GC(null);
 
-					/* Copy the bitmap */
-					long hdcSource = OS.CreateCompatibleDC(hDC);
-					long hdcDest = OS.CreateCompatibleDC(hDC);
-					long hOldSrc = OS.SelectObject(hdcSource, srcImageHandle);
-					BITMAP bm = new BITMAP();
-					OS.GetObject(srcImageHandle, BITMAP.sizeof, bm);
-					imageMetadata = new ImageHandle(OS.CreateCompatibleBitmap(hdcSource, rect.width, bm.bmBits != 0 ? -rect.height : rect.height), getZoom());
-					if (imageMetadata.handle == 0) SWT.error(SWT.ERROR_NO_HANDLES);
-					long hOldDest = OS.SelectObject(hdcDest, imageMetadata.handle);
-					OS.BitBlt(hdcDest, 0, 0, rect.width, rect.height, hdcSource, 0, 0, OS.SRCCOPY);
-					OS.SelectObject(hdcSource, hOldSrc);
-					OS.SelectObject(hdcDest, hOldDest);
-					OS.DeleteDC(hdcSource);
-					OS.DeleteDC(hdcDest);
+						/* Copy the bitmap */
+						long hdcSource = OS.CreateCompatibleDC(hDC);
+						long hdcDest = OS.CreateCompatibleDC(hDC);
+						long hOldSrc = OS.SelectObject(hdcSource, srcImageHandle);
+						BITMAP bm = new BITMAP();
+						OS.GetObject(srcImageHandle, BITMAP.sizeof, bm);
+						imageMetadata = new ImageHandle(OS.CreateCompatibleBitmap(hdcSource, rect.width, bm.bmBits != 0 ? -rect.height : rect.height), imageHandle.zoom);
+						if (imageMetadata.handle == 0) SWT.error(SWT.ERROR_NO_HANDLES);
+						long hOldDest = OS.SelectObject(hdcDest, imageMetadata.handle);
+						OS.BitBlt(hdcDest, 0, 0, rect.width, rect.height, hdcSource, 0, 0, OS.SRCCOPY);
+						OS.SelectObject(hdcSource, hOldSrc);
+						OS.SelectObject(hdcDest, hOldDest);
+						OS.DeleteDC(hdcSource);
+						OS.DeleteDC(hdcDest);
 
-					/* Release the HDC for the device */
-					device.internal_dispose_GC(hDC, null);
-
+						/* Release the HDC for the device */
+						device.internal_dispose_GC(hDC, null);
+					}
 					transparentPixel = srcImage.transparentPixel;
 					break;
 				case SWT.ICON:
-					imageMetadata = new ImageHandle(OS.CopyImage(srcImageHandle, OS.IMAGE_ICON, rect.width, rect.height, 0), getZoom());
-					if (imageMetadata.handle == 0) SWT.error(SWT.ERROR_NO_HANDLES);
+					for (ImageHandle imageHandle : srcImage.zoomLevelToImageHandle.values()) {
+						Rectangle rect = imageHandle.getBounds();
+						imageMetadata = new ImageHandle(OS.CopyImage(imageHandle.handle, OS.IMAGE_ICON, rect.width, rect.height, 0), imageHandle.zoom);
+						if (imageMetadata.handle == 0) SWT.error(SWT.ERROR_NO_HANDLES);
+					}
 					break;
 				default:
 					SWT.error(SWT.ERROR_INVALID_IMAGE);
@@ -286,15 +290,21 @@ public Image(Device device, Image srcImage, int flag) {
 			break;
 		}
 		case SWT.IMAGE_DISABLE: {
-			ImageData data = srcImage.getImageData(srcImage.getZoom());
-			ImageData newData = applyDisableImageData(data, rect.height, rect.width);
-			init (newData, getZoom());
+			for (ImageHandle imageHandle : srcImage.zoomLevelToImageHandle.values()) {
+				Rectangle rect = imageHandle.getBounds();
+				ImageData data = srcImage.getImageData(imageHandle.zoom);
+				ImageData newData = applyDisableImageData(data, rect.height, rect.width);
+				init (newData, imageHandle.zoom);
+			}
 			break;
 		}
 		case SWT.IMAGE_GRAY: {
-			ImageData data = srcImage.getImageData(srcImage.getZoom());
-			ImageData newData = applyGrayImageData(data, rect.height, rect.width);
-			init (newData, getZoom());
+			for (ImageHandle imageHandle : srcImage.zoomLevelToImageHandle.values()) {
+				Rectangle rect = imageHandle.getBounds();
+				ImageData data = srcImage.getImageData(imageHandle.zoom);
+				ImageData newData = applyGrayImageData(data, rect.height, rect.width);
+				init (newData, imageHandle.zoom);
+			}
 			break;
 		}
 		default:
@@ -1089,47 +1099,49 @@ public Color getBackground() {
 
 	/* Get the HDC for the device */
 	long hDC = device.internal_new_GC(null);
-	long handle = win32_getHandle(this, getZoom());
-
-	/* Compute the background color */
-	BITMAP bm = new BITMAP();
-	OS.GetObject(handle, BITMAP.sizeof, bm);
-	long hdcMem = OS.CreateCompatibleDC(hDC);
-	long hOldObject = OS.SelectObject(hdcMem, handle);
-	int red = 0, green = 0, blue = 0;
-	if (bm.bmBitsPixel <= 8)  {
-		byte[] color = new byte[4];
-		OS.GetDIBColorTable(hdcMem, transparentPixel, 1, color);
-		blue = color[0] & 0xFF;
-		green = color[1] & 0xFF;
-		red = color[2] & 0xFF;
-	} else {
-		switch (bm.bmBitsPixel) {
-			case 16:
-				blue = (transparentPixel & 0x1F) << 3;
-				green = (transparentPixel & 0x3E0) >> 2;
-				red = (transparentPixel & 0x7C00) >> 7;
-				break;
-			case 24:
-				blue = (transparentPixel & 0xFF0000) >> 16;
-				green = (transparentPixel & 0xFF00) >> 8;
-				red = transparentPixel & 0xFF;
-				break;
-			case 32:
-				blue = (transparentPixel & 0xFF000000) >>> 24;
-				green = (transparentPixel & 0xFF0000) >> 16;
-				red = (transparentPixel & 0xFF00) >> 8;
-				break;
-			default:
-				return null;
+	return applyUsingAnyHandle(imageHandle -> {
+		long handle = imageHandle.handle;
+		/* Compute the background color */
+		BITMAP bm = new BITMAP();
+		OS.GetObject(handle, BITMAP.sizeof, bm);
+		long hdcMem = OS.CreateCompatibleDC(hDC);
+		long hOldObject = OS.SelectObject(hdcMem, handle);
+		int red = 0, green = 0, blue = 0;
+		if (bm.bmBitsPixel <= 8)  {
+			byte[] color = new byte[4];
+			OS.GetDIBColorTable(hdcMem, transparentPixel, 1, color);
+			blue = color[0] & 0xFF;
+			green = color[1] & 0xFF;
+			red = color[2] & 0xFF;
+		} else {
+			switch (bm.bmBitsPixel) {
+				case 16:
+					blue = (transparentPixel & 0x1F) << 3;
+					green = (transparentPixel & 0x3E0) >> 2;
+					red = (transparentPixel & 0x7C00) >> 7;
+					break;
+				case 24:
+					blue = (transparentPixel & 0xFF0000) >> 16;
+					green = (transparentPixel & 0xFF00) >> 8;
+					red = transparentPixel & 0xFF;
+					break;
+				case 32:
+					blue = (transparentPixel & 0xFF000000) >>> 24;
+					green = (transparentPixel & 0xFF0000) >> 16;
+					red = (transparentPixel & 0xFF00) >> 8;
+					break;
+				default:
+					return null;
+			}
 		}
-	}
-	OS.SelectObject(hdcMem, hOldObject);
-	OS.DeleteDC(hdcMem);
+		OS.SelectObject(hdcMem, hOldObject);
+		OS.DeleteDC(hdcMem);
 
-	/* Release the HDC for the device */
-	device.internal_dispose_GC(hDC, null);
-	return Color.win32_new(device, (blue << 16) | (green << 8) | red);
+
+		/* Release the HDC for the device */
+		device.internal_dispose_GC(hDC, null);
+		return Color.win32_new(device, (blue << 16) | (green << 8) | red);
+	});
 }
 
 /**
@@ -1176,7 +1188,7 @@ Rectangle getBounds(int zoom) {
  */
 @Deprecated
 public Rectangle getBoundsInPixels() {
-	return getBounds(getZoom());
+	return applyUsingAnyHandle(ImageHandle::getBounds);
 }
 
 /**
@@ -1258,7 +1270,7 @@ public ImageData getImageData (int zoom) {
  */
 @Deprecated
 public ImageData getImageDataAtCurrentZoom() {
-	return getImageMetadata(getZoom()).getImageData();
+	return applyUsingAnyHandle(ImageHandle::getImageData);
 }
 
 /**
@@ -1707,6 +1719,10 @@ private ImageHandle init(ImageData i, int zoom) {
  */
 @Override
 public long internal_new_GC (GCData data) {
+	return configureGC(data, 100);
+}
+
+private long configureGC(GCData data, int zoom) {
 	if (isDisposed()) SWT.error(SWT.ERROR_GRAPHIC_DISPOSED);
 	/*
 	* Create a new GC that can draw into the image.
@@ -1731,9 +1747,9 @@ public long internal_new_GC (GCData data) {
 			data.style |= SWT.LEFT_TO_RIGHT;
 		}
 		data.device = device;
-		data.nativeZoom = initialNativeZoom;
+		data.nativeZoom = zoom;
 		data.image = this;
-		data.font = SWTFontProvider.getSystemFont(device, initialNativeZoom);
+		data.font = SWTFontProvider.getSystemFont(device, zoom);
 	}
 	return imageDC;
 }
@@ -1830,6 +1846,18 @@ private int getZoom() {
 public String toString () {
 	if (isDisposed()) return "Image {*DISPOSED*}";
 	return "Image {" + zoomLevelToImageHandle + "}";
+}
+
+<T> T applyUsingAnyHandle(Function<ImageHandle, T> function) {
+	if (zoomLevelToImageHandle.isEmpty()) {
+		ImageHandle temporaryHandle = this.imageProvider.newImageHandle(DPIUtil.getDeviceZoom());
+		try {
+			return function.apply(temporaryHandle);
+		} finally {
+			temporaryHandle.destroy();
+		}
+	}
+	return function.apply(zoomLevelToImageHandle.values().iterator().next());
 }
 
 /**
@@ -2506,7 +2534,7 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 		} else {
 			image = new Image(device, width, height, zoom);
 		}
-		GC gc = new GC(image, gcStyle);
+		GC gc = new GC(new DrawableWrapper(image, zoom), gcStyle);
 		try {
 			gc.data.nativeZoom = zoom;
 			drawer.drawOn(gc, width, height);
@@ -2517,6 +2545,26 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 		} finally {
 			gc.dispose();
 			image.dispose();
+		}
+	}
+
+	private class DrawableWrapper implements Drawable {
+		private final Image image;
+		private final int zoom;
+
+		public DrawableWrapper(Image image, int zoom) {
+			this.image = image;
+			this.zoom = zoom;
+		}
+
+		@Override
+		public long internal_new_GC(GCData data) {
+			return this.image.configureGC(data, zoom);
+		}
+
+		@Override
+		public void internal_dispose_GC(long handle, GCData data) {
+			this.image.internal_dispose_GC(handle, data);
 		}
 	}
 
@@ -2556,6 +2604,10 @@ private class ImageHandle {
 			setBackground(backgroundColor);
 		}
 		setImageMetadataForHandle(this, zoom);
+	}
+
+	public Rectangle getBounds() {
+		return new Rectangle(0, 0, width, height);
 	}
 
 	private void setBackground(RGB color) {
