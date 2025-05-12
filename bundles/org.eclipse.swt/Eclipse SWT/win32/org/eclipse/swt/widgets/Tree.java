@@ -8148,10 +8148,11 @@ LRESULT wmNotifyToolTip (NMHDR hdr, long wParam, long lParam) {
 				// triggers additional display messages to SWT, creating an infinite loop
 				// of positioning and re-scaling events.
 				// Refer: https://github.com/eclipse-platform/eclipse.platform.swt/issues/557
-				Point cursorLocation = display.getCursorLocation();
-				Rectangle monitorBounds = cursorLocation instanceof MonitorAwarePoint monitorAwarePoint
-						? getContainingMonitorBoundsInMultiZoomCoordinateSystem(monitorAwarePoint)
-						: getContainingMonitorBoundsInSingleZoomCoordinateSystem(cursorLocation);
+//				Point cursorLocation = display.getCursorLocation();
+//				Rectangle monitorBounds = cursorLocation instanceof MonitorAwarePoint monitorAwarePoint
+//						? getContainingMonitorBoundsInMultiZoomCoordinateSystem(monitorAwarePoint)
+//						: getContainingMonitorBoundsInSingleZoomCoordinateSystem(cursorLocation);
+				Rectangle monitorBounds = getDisplay().fitRectangleBoundsIntoMonitor(toolRect);
 				if (monitorBounds == null) {
 					return null;
 				}

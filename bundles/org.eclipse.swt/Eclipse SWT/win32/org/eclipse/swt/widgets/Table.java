@@ -7193,8 +7193,10 @@ LRESULT wmNotifyToolTip (NMHDR hdr, long wParam, long lParam) {
 							OS.MapWindowPoints (handle, 0, toolRect, 2);
 							long hwndToolTip = OS.SendMessage (handle, OS.LVM_GETTOOLTIPS, 0, 0);
 							int flags = OS.SWP_NOACTIVATE | OS.SWP_NOZORDER;
-							int width = toolRect.right - toolRect.left, height = toolRect.bottom - toolRect.top;
-							OS.SetWindowPos (hwndToolTip, 0, toolRect.left , toolRect.top, width, height, flags);
+							Rectangle adjustedTooltipBounds = getDisplay().fitRectangleBoundsIntoMonitor(toolRect);
+							OS.SetWindowPos(hwndToolTip, 0, adjustedTooltipBounds.x, adjustedTooltipBounds.y,
+									adjustedTooltipBounds.width, adjustedTooltipBounds.height, flags);
+							result = LRESULT.ONE;
 						} else {
 							NMTTDISPINFO lpnmtdi = new NMTTDISPINFO ();
 							OS.MoveMemory (lpnmtdi, lParam, NMTTDISPINFO.sizeof);
