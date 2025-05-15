@@ -30,7 +30,8 @@ abstract class WebBrowser {
 	StatusTextListener[] statusTextListeners = new StatusTextListener[0];
 	TitleListener[] titleListeners = new TitleListener[0];
 	VisibilityWindowListener[] visibilityWindowListeners = new VisibilityWindowListener[0];
-	boolean jsEnabledOnNextPage = true, jsEnabled = true;
+	boolean jsEnabledOnNextPage = true;
+	boolean jsEnabled = true;
 	int nextFunctionIndex = 1;
 	Object evaluateResult;
 
