@@ -22,7 +22,6 @@ import org.junit.platform.suite.api.Suite;
  */
 @Suite
 @SelectClasses({
-	AllNonBrowserTests.class,
 	AllBrowserTests.class
 })
 public class AllTests {

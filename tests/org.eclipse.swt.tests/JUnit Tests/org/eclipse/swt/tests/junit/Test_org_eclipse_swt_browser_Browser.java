@@ -152,7 +152,9 @@ public class Test_org_eclipse_swt_browser_Browser extends Test_org_eclipse_swt_w
 @Parameters(name = "browser flags: {0}")
 public static Collection<Object[]> browserFlagsToTest() {
 	List<Object[]> browserFlags = new ArrayList<>();
-	browserFlags.add(new Object[] {SWT.NONE});
+	for(int i=0; i < 20; i++) {
+		browserFlags.add(new Object[] {SWT.NONE});
+	}
 	if (SwtTestUtil.isWindows) {
 		// Execute IE tests after Edge, because IE starts some OS timer that conflicts with Edge event handling
 		browserFlags.add(new Object[] {SWT.IE});
@@ -1141,7 +1143,7 @@ public void test_setText() {
  */
 @Test
 public void test_setTextContainingScript_applicationLayerProgressListenerMustSeeUpToDateDom() {
-	assumeFalse("Toggling on Edge since I20250216-1800, see https://github.com/eclipse-platform/eclipse.platform.swt/issues/1843", isEdge);
+//	assumeFalse("Toggling on Edge since I20250216-1800, see https://github.com/eclipse-platform/eclipse.platform.swt/issues/1843", isEdge);
 	AtomicBoolean completed = new AtomicBoolean();
 	browser.addProgressListener(ProgressListener.completedAdapter(event -> {
 		String script = """
@@ -1150,6 +1152,7 @@ public void test_setTextContainingScript_applicationLayerProgressListenerMustSee
 				// since getText() afterwards does not necessarily return the updated DOM (platform-dependent)
 				document.title = "ProgressListener: Found " + h1s.length + " h1 tag(s)";
 				""";
+		System.err.println("gotten: " + browser.getText());
 		browser.execute(script);
 		completed.set(true);
 	}));
@@ -1159,20 +1162,25 @@ public void test_setTextContainingScript_applicationLayerProgressListenerMustSee
 			title.set(event.title);
 		}
 	});
-	browser.setText("""
+//	<script src=\"file:///does/not/really/needs/to/exist.js\"></script>
+	String content = """
 			<html>
-				<head>
-					<script src=\"file:///does/not/really/needs/to/exist.js\"></script>
-				</head>
-				<body>
-					<h1>Hello, World!</h1>
-				</body>
-			</html>
-			""");
+			<head>
+				<script>console.log("test");</script>
+			</head>
+			<body>
+				<h1>Hello, World!</h1>
+			</body>
+		</html>
+		""";
+	browser.setText(content);
+	System.err.println("original: " + content);
 	assertTrue("progress completion not reported", waitForPassCondition(completed::get));
 	assertTrue("title not set", waitForPassCondition(() -> title.get() != null));
+	System.err.println("finally: " + browser.getText());
 	assertTrue(
 			"unexpected title: " + title.get(), waitForPassCondition(() -> title.get().contains("ProgressListener: Found 1 h1 tag(s)")));
+
 }
 
 @Test
