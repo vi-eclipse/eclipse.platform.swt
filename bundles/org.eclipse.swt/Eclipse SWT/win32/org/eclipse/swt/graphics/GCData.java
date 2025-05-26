@@ -48,14 +48,12 @@ public final class GCData {
 	public float lineMiterLimit = 10;
 	public int alpha = 0xFF;
 	public int nativeZoom;
+	public boolean initOnCreation = true;
 
 	public Image image;
 	public PAINTSTRUCT ps;
 	public int layout = -1;
-	public long hPen, hOldPen, hBrush, hOldBrush, hNullBitmap,
-		hwnd, gdipGraphics, gdipPen, gdipBrush, gdipFgBrush, gdipBgBrush,
-		gdipFont, hGDIFont;
-	public float gdipXOffset, gdipYOffset;
 	public int uiState = 0;
+	public long hwnd;
 	public boolean focusDrawn;
 }
