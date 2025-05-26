@@ -522,10 +522,11 @@ private static class PathHandle {
 	}
 
 	private boolean containsInPixels(float x, float y, GC gc, boolean outline) {
+		long gcHandle = GC.win32_getHandle(gc);
 		//TODO - should use GC transformation
-		gc.initGdip();
-		gc.checkGC(GC.LINE_CAP | GC.LINE_JOIN | GC.LINE_STYLE | GC.LINE_WIDTH);
-		int mode = OS.GetPolyFillMode(gc.handle) == OS.WINDING ? Gdip.FillModeWinding : Gdip.FillModeAlternate;
+		gc.initGdip(gcHandle);
+		gc.checkGC(gcHandle, gc.getZoom(), GC.LINE_CAP | GC.LINE_JOIN | GC.LINE_STYLE | GC.LINE_WIDTH);
+		int mode = OS.GetPolyFillMode(gcHandle) == OS.WINDING ? Gdip.FillModeWinding : Gdip.FillModeAlternate;
 		Gdip.GraphicsPath_SetFillMode(handle, mode);
 		if (outline) {
 			return Gdip.GraphicsPath_IsOutlineVisible(handle, x, y, gc.data.gdipPen, gc.data.gdipGraphics);

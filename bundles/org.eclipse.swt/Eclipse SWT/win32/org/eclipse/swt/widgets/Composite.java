@@ -267,7 +267,7 @@ Point computeSizeInPixels (int wHint, int hHint, boolean changed) {
 	//#define PW_CLIENTONLY 0x00000001
 	//DCOrg() wrong
 	//topHandle wrong for Tree?
-	long hDC = gc.handle;
+	long hDC = GC.win32_getHandle(gc, getNativeZoom());
 	int nSavedDC = OS.SaveDC (hDC);
 	OS.IntersectClipRect (hDC, 0, 0, width, height);
 
@@ -367,7 +367,7 @@ void drawBackgroundInPixels(GC gc, int x, int y, int width, int height, int offs
 	if (gc.isDisposed ()) error (SWT.ERROR_INVALID_ARGUMENT);
 	RECT rect = new RECT ();
 	OS.SetRect (rect, x, y, x + width, y + height);
-	long hDC = gc.handle;
+	long hDC = GC.win32_getHandle(gc, getNativeZoom());
 	int pixel = background == -1 ? gc.getBackground ().handle : -1;
 	drawBackground (hDC, rect, pixel, offsetX, offsetY);
 }
@@ -1508,6 +1508,8 @@ LRESULT WM_PAINT (long wParam, long lParam) {
 				bufferedPaint = true;
 			}
 		}
+		int zoom = getZoom();
+		int nativeZoom = getNativeZoom();
 		if (bufferedPaint) {
 			long hDC = OS.BeginPaint (handle, ps);
 			int width = ps.right - ps.left;
@@ -1539,7 +1541,7 @@ LRESULT WM_PAINT (long wParam, long lParam) {
 
 					Event event = new Event ();
 					event.gc = gc;
-					event.setBounds(DPIUtil.scaleDown(new Rectangle(ps.left, ps.top, width, height), getZoom()));
+					event.setBounds(DPIUtil.scaleDown(new Rectangle(ps.left, ps.top, width, height), zoom));
 					sendEvent (SWT.Paint, event);
 					if (data.focusDrawn && !isDisposed ()) updateUIState ();
 					gc.dispose ();
@@ -1558,9 +1560,10 @@ LRESULT WM_PAINT (long wParam, long lParam) {
 			/* Get the system region for the paint HDC */
 			long sysRgn = 0;
 			if ((style & (SWT.DOUBLE_BUFFERED | SWT.TRANSPARENT)) != 0 || (style & SWT.NO_MERGE_PAINTS) != 0) {
+				long gcHandle = GC.win32_getHandle(gc, nativeZoom);
 				sysRgn = OS.CreateRectRgn (0, 0, 0, 0);
-				if (OS.GetRandomRgn (gc.handle, sysRgn, OS.SYSRGN) == 1) {
-					if ((OS.GetLayout (gc.handle) & OS.LAYOUT_RTL) != 0) {
+				if (OS.GetRandomRgn (gcHandle, sysRgn, OS.SYSRGN) == 1) {
+					if ((OS.GetLayout (gcHandle) & OS.LAYOUT_RTL) != 0) {
 						int nBytes = OS.GetRegionData (sysRgn, 0, null);
 						int [] lpRgnData = new int [nBytes / 4];
 						OS.GetRegionData (sysRgn, nBytes, lpRgnData);
@@ -1589,28 +1592,29 @@ LRESULT WM_PAINT (long wParam, long lParam) {
 					gc.setForeground (getForeground ());
 					gc.setBackground (getBackground ());
 					gc.setFont (getFont ());
+					long gcHandle = GC.win32_getHandle(gc, nativeZoom);
 					if ((style & SWT.TRANSPARENT) != 0) {
-						OS.BitBlt (gc.handle, 0, 0, width, height, paintGC.handle, ps.left, ps.top, OS.SRCCOPY);
+						OS.BitBlt (gcHandle, 0, 0, width, height, GC.win32_getHandle(paintGC, nativeZoom), ps.left, ps.top, OS.SRCCOPY);
 					}
 					OS.OffsetRgn (sysRgn, -ps.left, -ps.top);
-					OS.SelectClipRgn (gc.handle, sysRgn);
+					OS.SelectClipRgn (gcHandle, sysRgn);
 					OS.OffsetRgn (sysRgn, ps.left, ps.top);
-					OS.SetMetaRgn (gc.handle);
-					OS.SetWindowOrgEx (gc.handle, ps.left, ps.top, null);
-					OS.SetBrushOrgEx (gc.handle, ps.left, ps.top, null);
+					OS.SetMetaRgn (gcHandle);
+					OS.SetWindowOrgEx (gcHandle, ps.left, ps.top, null);
+					OS.SetBrushOrgEx (gcHandle, ps.left, ps.top, null);
 					if ((style & (SWT.NO_BACKGROUND | SWT.TRANSPARENT)) != 0) {
 						/* This code is intentionally commented because it may be slow to copy bits from the screen */
 						//paintGC.copyArea (image, ps.left, ps.top);
 					} else {
 						RECT rect = new RECT ();
 						OS.SetRect (rect, ps.left, ps.top, ps.right, ps.bottom);
-						drawBackground (gc.handle, rect);
+						drawBackground (gcHandle, rect);
 					}
 				}
 				Event event = new Event ();
 				event.gc = gc;
+				long gcHandle = GC.win32_getHandle(gc, nativeZoom);
 				RECT rect = null;
-				int zoom = getZoom();
 				if ((style & SWT.NO_MERGE_PAINTS) != 0 && OS.GetRgnBox (sysRgn, rect = new RECT ()) == OS.COMPLEXREGION) {
 					int nBytes = OS.GetRegionData (sysRgn, 0, null);
 					int [] lpRgnData = new int [nBytes / 4];
@@ -1620,7 +1624,7 @@ LRESULT WM_PAINT (long wParam, long lParam) {
 						int offset = 8 + (i << 2);
 						OS.SetRect (rect, lpRgnData [offset], lpRgnData [offset + 1], lpRgnData [offset + 2], lpRgnData [offset + 3]);
 						if ((style & (SWT.DOUBLE_BUFFERED | SWT.NO_BACKGROUND | SWT.TRANSPARENT)) == 0) {
-							drawBackground (gc.handle, rect);
+							drawBackground (gcHandle, rect);
 						}
 						event.setBounds(DPIUtil.scaleDown(new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top), zoom));
 						event.count = count - 1 - i;
@@ -1630,7 +1634,7 @@ LRESULT WM_PAINT (long wParam, long lParam) {
 					if ((style & (SWT.DOUBLE_BUFFERED | SWT.NO_BACKGROUND | SWT.TRANSPARENT)) == 0) {
 						if (rect == null) rect = new RECT ();
 						OS.SetRect (rect, ps.left, ps.top, ps.right, ps.bottom);
-						drawBackground (gc.handle, rect);
+						drawBackground (gcHandle, rect);
 					}
 					event.setBounds(DPIUtil.scaleDown(new Rectangle(ps.left, ps.top, width, height), zoom));
 					sendEvent (SWT.Paint, event);

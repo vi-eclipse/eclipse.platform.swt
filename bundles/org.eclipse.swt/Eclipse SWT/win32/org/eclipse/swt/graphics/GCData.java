@@ -31,31 +31,50 @@ import org.eclipse.swt.internal.win32.*;
  */
 public final class GCData {
 	public Device device;
-	public int style, state = -1;
+	public int style;
+	int state = -1;
 	public int foreground = -1;
 	public int background = -1;
 	public Font font;
-	public Pattern foregroundPattern;
-	public long gdipFgPatternBrushAlpha;
-	public Pattern backgroundPattern;
-	public long gdipBgPatternBrushAlpha;
-	public int lineStyle = SWT.LINE_SOLID;
-	public float lineWidth;
-	public int lineCap = SWT.CAP_FLAT;
-	public int lineJoin = SWT.JOIN_MITER;
-	public float lineDashesOffset;
-	public float[] lineDashes;
-	public float lineMiterLimit = 10;
-	public int alpha = 0xFF;
+	Pattern foregroundPattern;
+	long gdipFgPatternBrushAlpha;
+	Pattern backgroundPattern;
+	long gdipBgPatternBrushAlpha;
+	int lineStyle = SWT.LINE_SOLID;
+	float lineWidth;
+	int lineCap = SWT.CAP_FLAT;
+	int lineJoin = SWT.JOIN_MITER;
+	float lineDashesOffset;
+	float[] lineDashes;
+	float lineMiterLimit = 10;
+	int alpha = 0xFF;
 	public int nativeZoom;
 
 	public Image image;
 	public PAINTSTRUCT ps;
 	public int layout = -1;
-	public long hPen, hOldPen, hBrush, hOldBrush, hNullBitmap,
-		hwnd, gdipGraphics, gdipPen, gdipBrush, gdipFgBrush, gdipBgBrush,
+	long hPen, hOldPen;
+	long hBrush, hOldBrush;
+	long hNullBitmap;
+	public long hwnd;
+	public long  gdipGraphics, gdipPen, gdipBrush, gdipFgBrush, gdipBgBrush,
 		gdipFont, hGDIFont;
-	public float gdipXOffset, gdipYOffset;
+	float gdipXOffset, gdipYOffset;
 	public int uiState = 0;
 	public boolean focusDrawn;
+
+	void copyTo(GCData originalData) {
+		originalData.device = device;
+		originalData.style = style;
+		originalData.foreground = foreground;
+		originalData.background = background;
+		originalData.font = font;
+		originalData.nativeZoom = nativeZoom;
+		originalData.image = image;
+		originalData.ps = ps;
+		originalData.layout = layout;
+		originalData.hwnd = hwnd;
+		originalData.uiState = uiState;
+		originalData.focusDrawn = focusDrawn;
+	}
 }
