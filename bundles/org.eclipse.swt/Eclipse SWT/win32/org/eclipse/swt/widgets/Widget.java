@@ -2357,7 +2357,7 @@ LRESULT wmPaint (long hwnd, long wParam, long lParam) {
 		int width = rect.right - rect.left;
 		int height = rect.bottom - rect.top;
 		if (width != 0 && height != 0) {
-			long hDC = gc.handle;
+			long hDC = GC.win32_getHandle(gc, getNativeZoom());
 			OS.SelectClipRgn (hDC, rgn);
 			OS.SetMetaRgn (hDC);
 			Event event = new Event ();

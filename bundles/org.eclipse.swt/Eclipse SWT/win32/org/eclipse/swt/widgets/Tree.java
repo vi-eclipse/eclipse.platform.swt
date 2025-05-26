@@ -7126,7 +7126,7 @@ LRESULT WM_PAINT (long wParam, long lParam) {
 				data.ps = ps;
 				data.hwnd = handle;
 				gc = GC.win32_new (this, data);
-				paintDC = gc.handle;
+				paintDC = GC.win32_getHandle(gc, getNativeZoom());
 			} else {
 				paintDC = OS.BeginPaint (handle, ps);
 			}

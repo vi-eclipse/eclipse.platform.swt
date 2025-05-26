@@ -369,7 +369,7 @@ void computeRuns (GC gc) {
 		freeRuns();
 	}
 	if (runs != null) return;
-	long hDC = gc != null ? gc.handle : device.internal_new_GC(null);
+	long hDC = gc != null ? GC.win32_getHandle(gc) : device.internal_new_GC(null);
 	long srcHdc = OS.CreateCompatibleDC(hDC);
 	allRuns = itemize();
 	for (int i=0; i<allRuns.length - 1; i++) {
@@ -796,7 +796,7 @@ void drawInPixels (GC gc, int xInPoints, int yInPoints, int selectionStart, int 
 	int length = text.length();
 	if (length == 0 && flags == 0) return;
 	yInPoints += verticalIndentInPoints;
-	long hdc = gc.handle;
+	long hdc = GC.win32_getHandle(gc);
 	Rectangle clip = gc.getClippingInPixels();
 	GCData data = gc.data;
 	long gdipGraphics = data.gdipGraphics;
@@ -808,8 +808,8 @@ void drawInPixels (GC gc, int xInPoints, int yInPoints, int selectionStart, int 
 	long gdipLinkColor = 0;
 	int state = 0;
 	if (gdip) {
-		gc.checkGC(GC.FOREGROUND);
-		gdipForeground = gc.getFgBrush();
+		gc.checkGC(hdc, gc.getZoom(), GC.FOREGROUND);
+		gdipForeground = gc.getFgBrush(data);
 	} else {
 		state = OS.SaveDC(hdc);
 		if ((data.style & SWT.MIRRORED) != 0) {

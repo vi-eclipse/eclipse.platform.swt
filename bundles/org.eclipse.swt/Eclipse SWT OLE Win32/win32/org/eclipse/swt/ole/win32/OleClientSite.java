@@ -1006,7 +1006,7 @@ private void onPaint(Event e) {
 
 		long pArea = OS.GlobalAlloc(COM.GMEM_FIXED | COM.GMEM_ZEROINIT, RECT.sizeof);
 		OS.MoveMemory(pArea, rect, RECT.sizeof);
-		COM.OleDraw(objIUnknown.getAddress(), aspect, e.gc.handle, pArea);
+		COM.OleDraw(objIUnknown.getAddress(), aspect, GC.win32_getHandle(e.gc), pArea);
 		OS.GlobalFree(pArea);
 	}
 }
