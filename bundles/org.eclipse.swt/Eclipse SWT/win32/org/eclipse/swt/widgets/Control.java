@@ -5867,6 +5867,10 @@ LRESULT wmScrollChild (long wParam, long lParam) {
 	return null;
 }
 
+@Override
+int getAbsoluteZoom() {
+	return getShell().getZoom();
+}
 
 private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
 	if (!(widget instanceof Control control)) {

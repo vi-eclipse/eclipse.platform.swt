@@ -1277,7 +1277,7 @@ boolean sendMouseEvent (int type, int button, int count, int detail, boolean sen
 	event.button = button;
 	event.detail = detail;
 	event.count = count;
-	int zoom = getZoom();
+	int zoom = getAbsoluteZoom();
 	event.setLocation(DPIUtil.scaleDown(OS.GET_X_LPARAM (lParam), zoom), DPIUtil.scaleDown(OS.GET_Y_LPARAM (lParam), zoom));
 	setInputState (event, type);
 	mapEvent (hwnd, event);
@@ -2708,6 +2708,10 @@ int getNativeZoom() {
 		return 100;
 	}
 	return nativeZoom;
+}
+
+int getAbsoluteZoom() {
+	return getZoom();
 }
 
 int getZoom() {
