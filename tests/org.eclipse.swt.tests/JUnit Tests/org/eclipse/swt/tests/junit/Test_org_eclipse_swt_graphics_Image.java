@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -438,6 +439,23 @@ public void test_ConstructorLorg_eclipse_swt_graphics_Device_ImageGcDrawer() {
 }
 
 @Test
+public void test_ConstructorLorg_eclipse_swt_graphics_DeviceImageI() throws IOException {
+	byte[] bytes = Files.readAllBytes(Path.of(getPath("collapseall.png")));
+	Image sourceImage = new Image(display, new ByteArrayInputStream(bytes));
+	Image copiedImage = new Image(display, sourceImage, SWT.IMAGE_COPY);
+	Image targetImage = new Image(display, 1, 1);
+	GC gc = new GC(targetImage);
+	gc.drawImage(sourceImage, 0, 0);
+	gc.drawImage(targetImage, 0, 0);
+
+	assertEquals(0, imageDataComparator().compare(sourceImage.getImageData(), copiedImage.getImageData()));
+
+	sourceImage.dispose();
+	copiedImage.dispose();
+	targetImage.dispose();
+}
+
+@Test
 public void test_equalsLjava_lang_Object() {
 	Image image = null;
 	Image image1 = null;
@@ -661,47 +679,24 @@ public void test_getImageData() {
 
 @Test
 public void test_getImageData_100() {
-	int zoom = DPIUtil.getDeviceZoom();
-	try {
-		DPIUtil.setDeviceZoom(100);
-		getImageData_int(100);
-	} finally {
-		DPIUtil.setDeviceZoom(zoom);
-	}
-}
+        getImageData_int(100);
+    }
 
 @Test
 public void test_getImageData_125() {
-	int zoom = DPIUtil.getDeviceZoom();
-	try {
-		DPIUtil.setDeviceZoom(125);
-		getImageData_int(125);
-	} finally {
-		DPIUtil.setDeviceZoom(zoom);
-	}
+    getImageData_int(125);
 }
 
 @Test
 public void test_getImageData_150() {
-	int zoom = DPIUtil.getDeviceZoom();
-	try {
-		DPIUtil.setDeviceZoom(150);
-		getImageData_int(150);
-	} finally {
-		DPIUtil.setDeviceZoom(zoom);
-	}
+    getImageData_int(150);
 }
 
 @Test
 public void test_getImageData_200() {
-	int zoom = DPIUtil.getDeviceZoom();
-	try {
-		DPIUtil.setDeviceZoom(200);
-		getImageData_int(200);
-	} finally {
-		DPIUtil.setDeviceZoom(zoom);
-	}
+    getImageData_int(200);
 }
+
 
 void getImageData_int(int zoom) {
 	Rectangle bounds = new Rectangle(0, 0, 10, 20);
