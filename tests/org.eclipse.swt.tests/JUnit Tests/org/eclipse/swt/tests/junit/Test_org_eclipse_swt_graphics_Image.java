@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -208,16 +209,17 @@ public void test_ConstructorLorg_eclipse_swt_graphics_DeviceLorg_eclipse_swt_gra
 	data = new ImageData(10, 10, 8, new PaletteData(0x30, 0x0C, 0x03));
 	// set red pixel at x=9, y=9
 	data.setPixel(9, 9, 0x30);
-	image = new Image(display, data);
-	Image gcImage = new Image(display, 10, 10);
-	GC gc = new GC(gcImage);
-	gc.drawImage(image, 0, 0);
+	final Image imageFromImageData = new Image(display, data);
+	ImageGcDrawer gcDrawer = (gc, width, height) -> {
+		gc.drawImage(imageFromImageData, 0, 0);
+	};
+	Image gcImage = new Image(display, gcDrawer, 10, 10);
 	ImageData gcImageData = gcImage.getImageData();
 	int redPixel = gcImageData.getPixel(9, 9);
 	assertEquals(getRealRGB(display.getSystemColor(SWT.COLOR_RED)), gcImageData.palette.getRGB(redPixel));
-	gc.dispose();
 	gcImage.dispose();
 	image.dispose();
+	imageFromImageData.dispose();
 }
 
 @Test
@@ -251,21 +253,23 @@ public void test_ConstructorLorg_eclipse_swt_graphics_DeviceLorg_eclipse_swt_gra
 	data6.setPixel(9, 9, 0x30);
 	data7 = new ImageData(10, 10, 1, new PaletteData(new RGB(0, 0, 0), new RGB(255, 255, 255)));
 	data7.setPixel(9, 9, 1);
-	image = new Image(display, data6, data7);
-	Image gcImage = new Image(display, 10, 10);
-	GC gc = new GC(gcImage);
+	Image image2 = new Image(display, data6, data7);
 	Color backgroundColor = display.getSystemColor(SWT.COLOR_BLUE);
-	gc.setBackground(backgroundColor);
-	gc.fillRectangle(0, 0, 10, 10);
-	gc.drawImage(image, 0, 0);
+	final ImageGcDrawer gcDrawer = (gc, width, height) -> {
+		gc.setBackground(backgroundColor);
+		gc.fillRectangle(0, 0, 10, 10);
+		gc.drawImage(image2, 0, 0);
+	};
+	Image gcImage = new Image(display, gcDrawer, 10, 10);
+
 	ImageData gcImageData = gcImage.getImageData();
 	int redPixel = gcImageData.getPixel(9, 9);
 	assertEquals(getRealRGB(display.getSystemColor(SWT.COLOR_RED)), gcImageData.palette.getRGB(redPixel));
 	int bluePixel = gcImageData.getPixel(0, 0);
 	assertEquals(getRealRGB(backgroundColor), gcImageData.palette.getRGB(bluePixel));
-	gc.dispose();
 	gcImage.dispose();
 	image.dispose();
+	image2.dispose();
 }
 
 @Test
@@ -543,7 +547,7 @@ public void test_equalsLjava_lang_Object() {
 
 @Test
 public void test_getBackground() {
-	Image image = new Image(display, 10, 10);
+	Image image = new Image(display, (gc, width, height) -> {}, 10, 10);
 	image.dispose();
 	SWTException e = assertThrows(SWTException.class, () -> image.getBackground());
 	assertSWTProblem("Incorrect exception thrown for disposed image", SWT.ERROR_GRAPHIC_DISPOSED, e);
@@ -553,19 +557,19 @@ public void test_getBackground() {
 @Test
 public void test_getBounds() {
 	Rectangle bounds = new Rectangle(0, 0, 10, 20);
-	Image image1 = new Image(display, bounds.width, bounds.height);
+	Image image1 = new Image(display, (gc, width, height) -> {}, bounds.width, bounds.height);
 	image1.dispose();
 	SWTException e = assertThrows(SWTException.class, () -> image1.getBounds());
 	assertSWTProblem("Incorrect exception thrown for disposed image", SWT.ERROR_GRAPHIC_DISPOSED, e);
 
 	Image image;
 	// creates bitmap image
-	image = new Image(display, bounds.width, bounds.height);
+	image = new Image(display, (gc, width, height) -> {}, bounds.width, bounds.height);
 	Rectangle bounds1 = image.getBounds();
 	image.dispose();
 	assertEquals(bounds, bounds1);
 
-	image = new Image(display, bounds.width, bounds.height);
+	image = new Image(display, (gc, width, height) -> {},  bounds.width, bounds.height);
 	bounds1 = image.getBounds();
 	image.dispose();
 	assertEquals(bounds, bounds1);
@@ -721,6 +725,13 @@ void getImageData_int(int zoom) {
 	image.dispose();
 	assertEquals(":a: Size of ImageData returned from Image.getImageData(int) method doesn't return matches with bounds in Pixel values.", scaleBounds(bounds, zoom, 100), boundsAtZoom);
 
+	// creates bitmap image with GCDrawer and compare size of imageData
+	image = new Image(display, (gc, width, height) -> {}, bounds.width, bounds.height);
+	imageDataAtZoom = image.getImageData(zoom);
+	image.dispose();
+	boundsAtZoom = new Rectangle(0, 0, imageDataAtZoom.width, imageDataAtZoom.height);
+	assertEquals(":a: Size of ImageData returned from Image.getImageData(int) method doesn't return matches with bounds in Pixel values.", scaleBounds(bounds, zoom, 100), boundsAtZoom);
+
 	// create icon image and compare size of imageData
 	ImageData imageData = new ImageData(bounds.width, bounds.height, 1, new PaletteData(new RGB[] {new RGB(0, 0, 0)}));
 	image = new Image(display, imageData);
@@ -770,7 +781,7 @@ public void test_hashCode() {
 	Image image1 = null;
 
 	try {
-		image = new Image(display, 10, 10);
+		image = new Image(display, (gc, width, height) -> {}, 10, 10);
 		image1 = image;
 
 		assertEquals(image1.hashCode(), image.hashCode());
@@ -831,14 +842,14 @@ public void test_setBackgroundLorg_eclipse_swt_graphics_Color() {
 			"Excluded test_setBackgroundLorg_eclipse_swt_graphics_Color(org.eclipse.swt.tests.junit.Test_org_eclipse_swt_graphics_Image)",
 			SwtTestUtil.isGTK);
 	// TODO Fix GTK failure.
-	Image image1 = new Image(display, 10, 10);
+	Image image1 = new Image(display, (gc, width, height) -> {}, 10, 10);
 	try {
 		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> image1.setBackground(null));
 		assertSWTProblem("Incorrect exception thrown for color == null", SWT.ERROR_NULL_ARGUMENT, e);
 	} finally {
 		image1.dispose();
 	}
-	Image image2 = new Image(display, 10, 10);
+	Image image2 = new Image(display, (gc, width, height) -> {}, 10, 10);
 	Color color2 = new Color(255, 255, 255);
 	color2.dispose();
 	try {
@@ -847,14 +858,14 @@ public void test_setBackgroundLorg_eclipse_swt_graphics_Color() {
 	} finally {
 		image2.dispose();
 	}
-	Image image3 = new Image(display, 10, 10);
+	Image image3 = new Image(display, (gc, width, height) -> {}, 10, 10);
 	image3.dispose();
 	Color color3 = new Color(255, 255, 255);
 	SWTException e = assertThrows(SWTException.class, () -> image3.setBackground(color3));
 	assertSWTProblem("Incorrect exception thrown for disposed image", SWT.ERROR_GRAPHIC_DISPOSED, e);
 
 	// this image does not have a transparent pixel by default so setBackground has no effect
-	Image image4 = new Image(display, 10, 10);
+	Image image4 = new Image(display, (gc, width, height) -> {}, 10, 10);
 	image4.setBackground(display.getSystemColor(SWT.COLOR_GREEN));
 	Color color4 = image4.getBackground();
 	assertNull("background color should be null for non-transparent image", color4);
@@ -873,7 +884,7 @@ public void test_setBackgroundLorg_eclipse_swt_graphics_Color() {
 
 @Test
 public void test_toString() {
-	Image image = new Image(display, 10, 10);
+	Image image = new Image(display, (gc, width, height) -> {}, 10, 10);
 	try {
 		assertNotNull(image.toString());
 		assertTrue(image.toString().length() > 0);
@@ -935,20 +946,16 @@ void getImageData2(int depth, PaletteData palette) {
 }
 
 RGB getRealRGB(Color color) {
-	Image colorImage = new Image(display, 10, 10);
-	GC imageGc = new GC(colorImage);
-	ImageData imageData;
-	PaletteData palette;
-	int pixel;
-
-	imageGc.setBackground(color);
-	imageGc.setForeground(color);
-	imageGc.fillRectangle(0, 0, 10, 10);
-	imageData = colorImage.getImageData();
-	palette = imageData.palette;
-	imageGc.dispose();
+	ImageGcDrawer gcDrawer = (imageGc, width, height) -> {
+		imageGc.setBackground(color);
+		imageGc.setForeground(color);
+		imageGc.fillRectangle(0, 0, width, height);
+	};
+	Image colorImage = new Image(display, gcDrawer, 10, 10);
+	ImageData imageData = colorImage.getImageData();
+	PaletteData palette = imageData.palette;
 	colorImage.dispose();
-	pixel = imageData.getPixel(0, 0);
+	int pixel = imageData.getPixel(0, 0);
 	return palette.getRGB(pixel);
 }
 
@@ -976,15 +983,16 @@ public void test_bug566545_efficientGrayscaleImage() {
 
 	Image imageIndexed = new Image(display, imageDataIndexed);
 	Image imageDirect = new Image(display, imageDataDirect);
-	Image outImageIndexed = new Image(display, width, height);
-	Image outImageDirect = new Image(display, width, height);
 
-	GC gc = new GC(outImageIndexed);
-	gc.drawImage(imageIndexed, 0, 0);
-	gc.dispose();
-	gc = new GC(outImageDirect);
-	gc.drawImage(imageDirect, 0, 0);
-	gc.dispose();
+	ImageGcDrawer gcDrawer1 = (gc, iWidth, iHeight) -> {
+		gc.drawImage(imageIndexed, 0, 0);
+	};
+	Image outImageIndexed = new Image(display, gcDrawer1, width, height);
+
+	ImageGcDrawer gcDrawer2 = (gc, iWidth, iHeight) -> {
+		gc.drawImage(imageDirect, 0, 0);
+	};
+	Image outImageDirect = new Image(display, gcDrawer2, width, height);
 
 	ImageTestUtil.assertImagesEqual(imageDataIndexed, imageDataDirect);
 	ImageTestUtil.assertImagesEqual(imageIndexed.getImageData(), imageDirect.getImageData());
@@ -1001,7 +1009,7 @@ public void test_updateWidthHeightAfterDPIChange() {
 	int deviceZoom = DPIUtil.getDeviceZoom();
 	try {
 		Rectangle imageSize = new Rectangle(0, 0, 16, 16);
-		Image baseImage = new Image(display, imageSize.width, imageSize.height);
+		Image baseImage = new Image(display, (gc, width, height) -> {}, imageSize.width, imageSize.height);
 		GC gc = new GC(display);
 		gc.drawImage(baseImage, 10, 10);
 		assertEquals("Base image size differs unexpectedly", imageSize, baseImage.getBounds());
@@ -1075,6 +1083,34 @@ public void test_imageDataSameViaProviderAndSimpleData() {
 	dataImage.dispose();
 }
 
+/**
+ * See https://github.com/eclipse-platform/eclipse.platform.ui/issues/3039
+ */
+@Test
+public void test_gcOnImageGcDrawer_imageDataAtNonDeviceZoom() {
+	int originalDeviceZoom = DPIUtil.getDeviceZoom();
+	int deviceZoom = 200;
+	int nonDeviceZoom = 100;
+	DPIUtil.setDeviceZoom(deviceZoom);
+
+	ImageGcDrawer blueDrawer = (gc, width, height) -> {
+		gc.setBackground(display.getSystemColor(SWT.COLOR_BLUE));
+		gc.fillRectangle(0, 0, width, height);
+	};
+	Image image = new Image(display, blueDrawer, 1, 1);
+	int bluePixelValue = image.getImageData(nonDeviceZoom).getPixel(0, 0);
+
+	GC redOverwritingGc = new GC(image);
+	try {
+		redOverwritingGc.setBackground(display.getSystemColor(SWT.COLOR_RED));
+		redOverwritingGc.fillRectangle(0, 0, 1, 1);
+		assertNotEquals(bluePixelValue, image.getImageData(nonDeviceZoom).getPixel(0, 0));
+	} finally {
+		redOverwritingGc.dispose();
+		image.dispose();
+		DPIUtil.setDeviceZoom(originalDeviceZoom);
+	}
+}
 
 private Comparator<ImageData> imageDataComparator() {
 	return Comparator.<ImageData>comparingInt(d -> d.width) //
@@ -1095,3 +1131,4 @@ private Comparator<ImageData> imageDataComparator() {
 }
 
 }
+
