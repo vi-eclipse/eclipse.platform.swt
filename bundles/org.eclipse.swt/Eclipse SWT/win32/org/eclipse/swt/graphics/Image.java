@@ -1015,7 +1015,7 @@ void destroyHandlesExcept(Set<Integer> zoomLevels) {
 	destroyHandles(zoom -> !zoomLevels.contains(zoom) && !this.imageProvider.getPreservedZoomLevels().contains(zoom));
 }
 
-private void destroyHandles(Predicate<Integer> filter) {
+void destroyHandles(Predicate<Integer> filter) {
 	Iterator<Entry<Integer, ImageHandle>> it = zoomLevelToImageHandle.entrySet().iterator();
 	while (it.hasNext()) {
 		Entry<Integer, ImageHandle> zoomToHandle = it.next();
@@ -2240,11 +2240,13 @@ private abstract class BaseImageProviderWrapper<T> extends DynamicImageProviderW
 
 	@Override
 	protected ImageHandle newImageHandle(int zoom) {
-		ImageData cachedData = cachedImageData.remove(zoom);
+		ImageData cachedData = cachedImageData.get(zoom);
 		if (cachedData != null) {
 			return init(cachedData, zoom);
 		}
-		return initializeHandleFromSource(zoom);
+		ImageHandle ih = initializeHandleFromSource(zoom);
+		cachedImageData.put(zoom, ih.getImageData());
+		return ih;
 	}
 
 	private ImageHandle initializeHandleFromSource(int zoom) {

@@ -1007,6 +1007,20 @@ private void drawFocusInPixels(int x, int y, int width, int height) {
  * </ul>
  */
 public void drawImage (Image image, int x, int y) {
+	drawImage(image, x, y, false);
+}
+
+public void drawImage (Image image, int x, int y, boolean cleanHandle) {
+	int deviceZoom = getZoom();
+	x = DPIUtil.scaleUp(drawable, x, deviceZoom);
+	y = DPIUtil.scaleUp(drawable, y, deviceZoom);
+	drawImageInPixels(image, x, y);
+	if (cleanHandle) {
+		image.destroyHandles(zoom -> zoom == deviceZoom);
+	}
+}
+
+void drawImageInPixels(Image image, int x, int y) {
 	checkNonDisposed();
 	if (image == null) SWT.error (SWT.ERROR_NULL_ARGUMENT);
 	if (image.isDisposed()) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
