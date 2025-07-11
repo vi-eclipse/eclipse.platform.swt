@@ -194,11 +194,7 @@ void drawBackground (Control control, long gdkResource, long cr, int x, int y, i
 			cairo_rectangle_int_t regionRect = new cairo_rectangle_int_t ();
 			int [] fetchedHeight = new int [1];
 			int [] fetchedWidth = new int [1];
-			if (GTK.GTK4) {
-				gdk_surface_get_size(gdkResource, fetchedWidth, fetchedHeight);
-			} else {
-				gdk_window_get_size(gdkResource, fetchedWidth, fetchedHeight);
-			}
+			gdk_surface_get_size(gdkResource, fetchedWidth, fetchedHeight);
 			regionRect.x = 0;
 			regionRect.y = 0;
 			regionRect.width = fetchedWidth[0];
@@ -3432,8 +3428,15 @@ int gtk_gesture_press_event (long gesture, int n_press, double x, double y, long
 				}
 			}
 		}
-	} else if (n_press == 2) {
+	} else if (n_press >= 2) {
 		boolean cancelled = sendMouseEvent(SWT.MouseDoubleClick, eventButton, n_press, 0, false, eventTime, x, y, false, eventState);
+		
+		//Issue 344, DoubleClick event currently unsupported below sendMouseEvent(). Until DoubleClickSupport is 
+		//added this will catch failed events and try MouseDown instead.
+		if (cancelled) {
+			cancelled = sendMouseEvent(SWT.MouseDown, eventButton, n_press, 0, false, eventTime, x, y, false, eventState);
+		}
+		
 		if (!cancelled) {
 			result = GTK4.GTK_EVENT_SEQUENCE_CLAIMED;
 		}
@@ -3456,7 +3459,7 @@ int gtk_gesture_release_event (long gesture, int n_press, double x, double y, lo
 	lastInput.x = (int) eventX[0];
 	lastInput.y = (int) eventY[0];
 	if (containedInRegion(lastInput.x, lastInput.y)) return GTK4.GTK_EVENT_SEQUENCE_NONE;
-	boolean cancelled = sendMouseEvent(SWT.MouseUp, eventButton, display.clickCount, 0, false, eventTime, 0, 0, false, eventState);
+	boolean cancelled = sendMouseEvent(SWT.MouseUp, eventButton, display.clickCount, 0, false, eventTime, x, y, false, eventState);
 	int result = GTK4.GTK_EVENT_SEQUENCE_NONE;
 	if (!cancelled) {
 		result = GTK4.GTK_EVENT_SEQUENCE_CLAIMED;
@@ -5176,6 +5179,9 @@ void setBackground () {
  * <p>
  * Note: This operation is a hint and may be overridden by the platform.
  * </p>
+ * <p>
+ * Note: The background color can be overridden by setting a background image.
+ * </p>
  * @param color the new color (or null)
  *
  * @exception IllegalArgumentException <ul>
@@ -5280,6 +5286,9 @@ void setBackgroundGdkRGBA (long handle, GdkRGBA rgba) {
  * <p>
  * Note: This operation is a hint and may be overridden by the platform.
  * For example, on Windows the background of a Button cannot be changed.
+ * </p>
+ * <p>
+ * Note: Setting a background image overrides a set background color.
  * </p>
  * @param image the new image (or null)
  *
