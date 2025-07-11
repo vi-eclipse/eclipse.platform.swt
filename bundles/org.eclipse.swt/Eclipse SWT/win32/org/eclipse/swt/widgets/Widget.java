@@ -135,6 +135,7 @@ public abstract class Widget {
 
 	private static final String DATA_AUTOSCALE_DISABLED = "AUTOSCALE_DISABLED";
 	private static final String DATA_NATIVE_ZOOM = "NATIVE_ZOOM";
+	private static final String DATA_ZOOM = "ZOOM";
 
 	/* Initialize the Common Controls DLL */
 	static {
@@ -191,6 +192,7 @@ public Widget (Widget parent, int style) {
 	reskinWidget ();
 	notifyCreationTracker();
 	this.setData(DATA_NATIVE_ZOOM, this.nativeZoom);
+	this.setData(DATA_ZOOM, DPIUtil.getZoomForAutoscaleProperty(this.nativeZoom));
 }
 
 void _addListener (int eventType, Listener listener) {
@@ -2720,6 +2722,7 @@ int getZoom() {
 private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
 	widget.nativeZoom = newZoom;
 	widget.setData(DATA_NATIVE_ZOOM, newZoom);
+	widget.setData(DATA_ZOOM, DPIUtil.getZoomForAutoscaleProperty(newZoom));
 }
 
 int getSystemMetrics(int nIndex) {
