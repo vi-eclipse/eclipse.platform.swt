@@ -491,13 +491,38 @@ public void copyArea (Image image, int x, int y) {
 	storeAndApplyOperationForExistingHandle(new CopyAreaToImageOperation(image, x, y));
 }
 
-private class CopyAreaToImageOperation extends Operation {
-	private final Image image;
+private abstract class ImageOperation extends Operation {
+	private Image image;
+
+	ImageOperation(Image image) {
+		setImage(image);
+		image.addOnDisposeListener(this::setCopyOfImage);
+	}
+
+	private void setImage(Image image) {
+		this.image = image;
+	}
+
+	private void setCopyOfImage(Image image) {
+		if (!GC.this.isDisposed()) {
+			Image copiedImage = new Image(image.device, image, SWT.IMAGE_COPY);
+			setImage(copiedImage);
+			registerForDisposal(copiedImage);
+		}
+	}
+
+	protected Image getImage() {
+		return image;
+	}
+
+}
+
+private class CopyAreaToImageOperation extends ImageOperation {
 	private final int x;
 	private final int y;
 
 	CopyAreaToImageOperation(Image image, int x, int y) {
-		this.image = image;
+		super(image);
 		this.x = x;
 		this.y = y;
 	}
@@ -507,7 +532,7 @@ private class CopyAreaToImageOperation extends Operation {
 		int zoom = getZoom();
 		int scaledX = Win32DPIUtils.pointToPixel(drawable, this.x, zoom);
 		int scaledY = Win32DPIUtils.pointToPixel(drawable, this.y, zoom);
-		copyAreaInPixels(this.image, scaledX, scaledY);
+		copyAreaInPixels(getImage(), scaledX, scaledY);
 	}
 }
 
@@ -1013,18 +1038,17 @@ public void drawImage (Image image, int x, int y) {
 	storeAndApplyOperationForExistingHandle(new DrawImageOperation(image, new Point(x, y)));
 }
 
-private class DrawImageOperation extends Operation {
-	private final Image image;
+private class DrawImageOperation extends ImageOperation {
 	private final Point location;
 
 	DrawImageOperation(Image image, Point location) {
-		this.image = image;
+		super(image);
 		this.location = location;
 	}
 
 	@Override
 	void apply() {
-		drawImageInPixels(this.image, Win32DPIUtils.pointToPixel(drawable, this.location, getZoom()));
+		drawImageInPixels(getImage(), Win32DPIUtils.pointToPixel(drawable, this.location, getZoom()));
 	}
 
 	private void drawImageInPixels(Image image, Point location) {
@@ -1081,13 +1105,12 @@ void drawImage(Image srcImage, int srcX, int srcY, int srcWidth, int srcHeight, 
 	storeAndApplyOperationForExistingHandle(new DrawImageToImageOperation(srcImage, new Rectangle(srcX, srcY, srcWidth, srcHeight), new Rectangle(destX, destY, destWidth, destHeight), simple));
 }
 
-private class DrawScalingImageToImageOperation extends Operation {
-	private final Image image;
+private class DrawScalingImageToImageOperation extends ImageOperation {
 	private final Rectangle source;
 	private final Rectangle destination;
 
 	DrawScalingImageToImageOperation(Image image, Rectangle source, Rectangle destination) {
-		this.image = image;
+		super(image);
 		this.source = source;
 		this.destination = destination;
 	}
@@ -1096,7 +1119,7 @@ private class DrawScalingImageToImageOperation extends Operation {
 	void apply() {
 		int gcZoom = getZoom();
 		int srcImageZoom = calculateZoomForImage(gcZoom, source.width, source.height, destination.width, destination.height);
-		drawImage(image, source.x, source.y, source.width, source.height, destination.x, destination.y, destination.width, destination.height, gcZoom, srcImageZoom);
+		drawImage(getImage(), source.x, source.y, source.width, source.height, destination.x, destination.y, destination.width, destination.height, gcZoom, srcImageZoom);
 	}
 
 	private Collection<Integer> getAllCurrentMonitorZooms() {
@@ -1154,14 +1177,13 @@ private void drawImage(Image image, int srcX, int srcY, int srcWidth, int srcHei
 	drawImage(image, src.x, src.y, src.width, src.height, dest.x, dest.y, dest.width, dest.height, false, scaledImageZoom);
 }
 
-private class DrawImageToImageOperation extends Operation {
-	private final Image image;
+private class DrawImageToImageOperation extends ImageOperation {
 	private final Rectangle source;
 	private final Rectangle destination;
 	private final boolean simple;
 
 	DrawImageToImageOperation(Image image, Rectangle source, Rectangle destination, boolean simple) {
-		this.image = image;
+		super(image);
 		this.source = source;
 		this.destination = destination;
 		this.simple = simple;
@@ -1169,7 +1191,7 @@ private class DrawImageToImageOperation extends Operation {
 
 	@Override
 	void apply() {
-		drawImage(image, source.x, source.y, source.width, source.height, destination.x, destination.y, destination.width, destination.height, simple, getZoom());
+		drawImage(getImage(), source.x, source.y, source.width, source.height, destination.x, destination.y, destination.width, destination.height, simple, getZoom());
 	}
 }
 
@@ -1958,14 +1980,20 @@ private class DrawPathOperation extends Operation {
 	@Override
 	void apply() {
 		Path path = new Path(device, pathData);
-		long pathHandle = path.getHandle(getZoom());
-		if (pathHandle == 0) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
-		initGdip();
-		checkGC(DRAW);
-		long gdipGraphics = data.gdipGraphics;
-		Gdip.Graphics_TranslateTransform(gdipGraphics, data.gdipXOffset, data.gdipYOffset, Gdip.MatrixOrderPrepend);
-		Gdip.Graphics_DrawPath(gdipGraphics, data.gdipPen, pathHandle);
-		Gdip.Graphics_TranslateTransform(gdipGraphics, -data.gdipXOffset, -data.gdipYOffset, Gdip.MatrixOrderPrepend);
+		try {
+			long pathHandle = path.getHandle(getZoom());
+			if (pathHandle == 0)
+				SWT.error(SWT.ERROR_INVALID_ARGUMENT);
+			initGdip();
+			checkGC(DRAW);
+			long gdipGraphics = data.gdipGraphics;
+			Gdip.Graphics_TranslateTransform(gdipGraphics, data.gdipXOffset, data.gdipYOffset, Gdip.MatrixOrderPrepend);
+			Gdip.Graphics_DrawPath(gdipGraphics, data.gdipPen, pathHandle);
+			Gdip.Graphics_TranslateTransform(gdipGraphics, -data.gdipXOffset, -data.gdipYOffset,
+					Gdip.MatrixOrderPrepend);
+		} finally {
+			path.dispose();
+		}
 	}
 }
 
@@ -3272,13 +3300,18 @@ private class FillPathOperation extends Operation {
 	@Override
 	void apply() {
 		Path path = new Path(device, pathData);
-		long pathHandle = path.getHandle(getZoom());
-		if (pathHandle == 0) SWT.error(SWT.ERROR_INVALID_ARGUMENT);
-		initGdip();
-		checkGC(FILL);
-		int mode = OS.GetPolyFillMode(handle) == OS.WINDING ? Gdip.FillModeWinding : Gdip.FillModeAlternate;
-		Gdip.GraphicsPath_SetFillMode(pathHandle, mode);
-		Gdip.Graphics_FillPath(data.gdipGraphics, data.gdipBrush, pathHandle);
+		try {
+			long pathHandle = path.getHandle(getZoom());
+			if (pathHandle == 0)
+				SWT.error(SWT.ERROR_INVALID_ARGUMENT);
+			initGdip();
+			checkGC(FILL);
+			int mode = OS.GetPolyFillMode(handle) == OS.WINDING ? Gdip.FillModeWinding : Gdip.FillModeAlternate;
+			Gdip.GraphicsPath_SetFillMode(pathHandle, mode);
+			Gdip.Graphics_FillPath(data.gdipGraphics, data.gdipBrush, pathHandle);
+		} finally {
+			path.dispose();
+		}
 	}
 }
 
@@ -4629,7 +4662,9 @@ private class SetBackgroundOperation extends Operation {
 	private final Color color;
 
 	SetBackgroundOperation(Color color) {
-		this.color = color;
+		RGB rgb = color.getRGB();
+		this.color = new Color(color.getDevice(), rgb);
+		registerForDisposal(this.color);
 	}
 
 	@Override
@@ -4676,6 +4711,7 @@ private class SetBackgroundPatternOperation extends Operation {
 
 	SetBackgroundPatternOperation(Pattern pattern) {
 		this.pattern = pattern == null ? null : pattern.copy();
+		registerForDisposal(this.pattern);
 	}
 
 	@Override
@@ -4938,7 +4974,8 @@ private class SetFontOperation extends Operation {
 	private final Font font;
 
 	SetFontOperation(Font font) {
-		this.font = font;
+		this.font = new Font(font.getDevice(), font.getFontData());
+		registerForDisposal(this.font);
 	}
 
 	@Override
@@ -4973,7 +5010,9 @@ private class SetForegroundOperation extends Operation {
 	private final Color color;
 
 	SetForegroundOperation(Color color) {
-		this.color = color;
+		RGB rgb = color.getRGB();
+		this.color = new Color(color.getDevice(), rgb);
+		registerForDisposal(this.color);
 	}
 
 	@Override
@@ -5019,6 +5058,7 @@ private class SetForegroundPatternOperation extends Operation {
 
 	SetForegroundPatternOperation(Pattern pattern) {
 		this.pattern = pattern == null ? null : pattern.copy();
+		registerForDisposal(this.pattern);
 	}
 
 	@Override
@@ -5604,6 +5644,7 @@ private class SetTransformOperation extends Operation {
 			float[] elements = new float[6];
 			transform.getElements(elements);
 			this.transform = new Transform(device, elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]);
+			registerForDisposal(this.transform);
 		} else {
 			this.transform = null;
 		}
@@ -5876,8 +5917,36 @@ private void createGcHandle(Drawable drawable, GCData newData, int nativeZoom) {
 	}
 }
 
+
+@Override
+public void dispose() {
+    super.dispose();
+    disposeOperations();
+}
+
+private void disposeOperations() {
+    for (Operation op : operations) {
+        op.disposeAll();
+    }
+    operations.clear();
+}
+
 private abstract class Operation {
+	private final List<Resource> disposables = new ArrayList<>();
 	abstract void apply();
+
+	protected void registerForDisposal(Resource resource) {
+		if (resource != null) {
+			disposables.add(resource);
+		}
+	}
+
+	void disposeAll() {
+		for (Resource r : disposables) {
+			r.dispose();
+		}
+		disposables.clear();
+	}
 }
 }
 
