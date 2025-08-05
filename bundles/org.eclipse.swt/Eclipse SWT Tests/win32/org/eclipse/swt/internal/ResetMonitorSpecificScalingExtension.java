@@ -31,7 +31,7 @@ public sealed class ResetMonitorSpecificScalingExtension implements BeforeEachCa
 
 	@Override
 	public void afterEach(ExtensionContext context) throws Exception {
-		DPIUtil.setMonitorSpecificScaling(wasMonitorSpecificScalingActive);
+		Win32DPIUtils.setMonitorSpecificScaling(wasMonitorSpecificScalingActive);
 		Display.getDefault().dispose();
 	}
 
