@@ -839,7 +839,12 @@ void createRenderers (long columnHandle, int modelIndex, boolean check, int colu
 			GTK.gtk_tree_view_column_add_attribute (columnHandle, checkRenderer, OS.cell_background_rgba, BACKGROUND_COLUMN);
 		}
 	}
-	long pixbufRenderer = ownerDraw ? OS.g_object_new (display.gtk_cell_renderer_pixbuf_get_type (), 0) : GTK.gtk_cell_renderer_pixbuf_new ();
+	long pixbufRenderer ;
+	if (GTK.GTK4) {
+		pixbufRenderer = GTK.gtk_cell_renderer_pixbuf_new ();
+	} else {
+		pixbufRenderer = ownerDraw ? OS.g_object_new (display.gtk_cell_renderer_pixbuf_get_type (), 0) : GTK.gtk_cell_renderer_pixbuf_new ();
+	}
 	if (pixbufRenderer == 0) {
 		error (SWT.ERROR_NO_HANDLES);
 	} else {
@@ -2547,7 +2552,11 @@ void recreateRenderers () {
 	if (checkRenderer != 0) {
 		display.removeWidget (checkRenderer);
 		OS.g_object_unref (checkRenderer);
-		checkRenderer = ownerDraw ? OS.g_object_new (display.gtk_cell_renderer_toggle_get_type(), 0) : GTK.gtk_cell_renderer_toggle_new ();
+		if (GTK.GTK4) {
+			checkRenderer = GTK.gtk_cell_renderer_toggle_new ();
+		} else {
+			checkRenderer = ownerDraw ? OS.g_object_new (display.gtk_cell_renderer_toggle_get_type(), 0) : GTK.gtk_cell_renderer_toggle_new ();
+		}
 		if (checkRenderer == 0) error (SWT.ERROR_NO_HANDLES);
 		OS.g_object_ref (checkRenderer);
 		display.addWidget (checkRenderer, this);
