@@ -829,17 +829,29 @@ private ImageHandle getImageMetadata(ZoomContext zoomContext) {
  * @noreference This method is not intended to be referenced by clients.
  */
 public static long win32_getHandle (Image image, int zoom) {
-	if(image.isDisposed()) {
-		return 0L;
-	}
-	return image.getImageMetadata(new ZoomContext(zoom)).handle;
+	return image.getHandle(zoom);
 }
 
-long getHandle (int targetZoom, int nativeZoom) {
+long getHandle(int zoom) {
 	if (isDisposed()) {
 		return 0L;
 	}
-	return getImageMetadata(new ZoomContext(targetZoom, nativeZoom)).handle;
+	return getImageMetadata(new ZoomContext(zoom)).handle;
+}
+
+long getHandle (int targetZoom, int nativeZoom) {
+	if (targetZoom == nativeZoom || !imageProvider.supportComplexZoom()) {
+		return getHandle(targetZoom);
+	}
+
+	if (isDisposed()) {
+		return 0L;
+	}
+	ZoomContext zoomContext = new ZoomContext(targetZoom, nativeZoom);
+	if (memGC != null) {
+		return imageProvider.newImageHandle(zoomContext).handle;
+	}
+	return getImageMetadata(zoomContext).handle;
 }
 
 /**
@@ -1751,6 +1763,10 @@ public long internal_new_GC (GCData data) {
 }
 
 private long configureGC(GCData data, int zoom) {
+	return configureGC(data, new ZoomContext(zoom));
+}
+
+private long configureGC(GCData data, ZoomContext zoomContext) {
 	if (isDisposed()) SWT.error(SWT.ERROR_GRAPHIC_DISPOSED);
 	/*
 	* Create a new GC that can draw into the image.
@@ -1761,7 +1777,7 @@ private long configureGC(GCData data, int zoom) {
 	}
 
 	if (Device.strictChecks) {
-		checkImageTypeForValidCustomDrawing(zoom);
+		checkImageTypeForValidCustomDrawing(zoomContext.targetZoom());
 	}
 	/* Create a compatible HDC for the device */
 	long hDC = device.internal_new_GC(null);
@@ -1778,9 +1794,10 @@ private long configureGC(GCData data, int zoom) {
 			data.style |= SWT.LEFT_TO_RIGHT;
 		}
 		data.device = device;
-		data.nativeZoom = zoom;
+		data.nativeZoom = zoomContext.nativeZoom();
+		data.imageZoom = zoomContext.targetZoom();
 		data.image = this;
-		data.font = SWTFontProvider.getSystemFont(device, zoom);
+		data.font = SWTFontProvider.getSystemFont(device, zoomContext.nativeZoom());
 	}
 	return imageDC;
 }
@@ -1931,6 +1948,10 @@ private record ZoomContext(int targetZoom, int nativeZoom) {
 private abstract class AbstractImageProviderWrapper {
 
 	protected abstract Rectangle getBounds(int zoom);
+
+	protected boolean supportComplexZoom() {
+		return false;
+	}
 
 	protected long configureGCData(GCData data) {
 		return configureGC(data, 100);
@@ -2158,6 +2179,11 @@ private class PlainImageProviderWrapper extends AbstractImageProviderWrapper {
 	}
 
 	@Override
+	protected boolean supportComplexZoom() {
+		return memGC != null;
+	}
+
+	@Override
 	public Collection<Integer> getPreservedZoomLevels() {
 		return Collections.singleton(baseZoom);
 	}
@@ -2197,7 +2223,7 @@ private class PlainImageProviderWrapper extends AbstractImageProviderWrapper {
 			GC currentGC = memGC;
 			memGC = null;
 			createHandle(zoom);
-			currentGC.refreshFor(new DrawableWrapper(Image.this, zoom), zoom);
+			currentGC.refreshFor(new DrawableWrapper(Image.this, zoomContext), zoom);
 			return zoomLevelToImageHandle.get(zoom);
 		}
 		return super.newImageHandle(zoomContext);
@@ -2595,6 +2621,11 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 	}
 
 	@Override
+	protected boolean supportComplexZoom() {
+		return true;
+	}
+
+	@Override
 	protected Rectangle getBounds(int zoom) {
 		Rectangle rectangle = new Rectangle(0, 0, width, height);
 		return Win32DPIUtils.scaleBounds(rectangle, zoom, 100);
@@ -2602,7 +2633,7 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 
 	@Override
 	protected long configureGCData(GCData data) {
-		return configureGC(data, currentZoom.nativeZoom);
+		return configureGC(data, currentZoom);
 	}
 
 	@Override
@@ -2627,10 +2658,10 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 		} else {
 			image = new Image(device, width, height);
 		}
-		GC gc = new GC(new DrawableWrapper(image, nativeZoom), gcStyle);
+		GC gc = new GC(new DrawableWrapper(image, zoomContext), gcStyle);
 		try {
 			drawer.drawOn(gc, width, height);
-			ImageData imageData = image.getImageData(nativeZoom);
+			ImageData imageData = image.getImageData(zoom);
 			drawer.postProcess(imageData);
 			ImageData newData = adaptImageDataIfDisabledOrGray(imageData);
 			return init(newData, zoom);
@@ -2664,16 +2695,16 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 
 private static class DrawableWrapper implements Drawable {
 	private final Image image;
-	private final int zoom;
+	private final ZoomContext zoomContext;
 
-	public DrawableWrapper(Image image, int zoom) {
+	public DrawableWrapper(Image image, ZoomContext zoomContext) {
 		this.image = image;
-		this.zoom = zoom;
+		this.zoomContext = zoomContext;
 	}
 
 	@Override
 	public long internal_new_GC(GCData data) {
-		return this.image.configureGC(data, zoom);
+		return this.image.configureGC(data, zoomContext);
 	}
 
 	@Override

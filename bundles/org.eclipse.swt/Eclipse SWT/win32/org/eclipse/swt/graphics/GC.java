@@ -1254,6 +1254,7 @@ private void drawImage(Image srcImage, int srcX, int srcY, int srcWidth, int src
 		return;
 	}
 	long imageHandle = srcImage.getHandle(imageZoom, data.nativeZoom);
+	//long imageHandle = Image.win32_getHandle(srcImage, imageZoom);
 	switch (srcImage.type) {
 		case SWT.BITMAP:
 			drawBitmap(srcImage, imageHandle, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight, simple);
@@ -4336,7 +4337,7 @@ private long identity() {
 			Image image = data.image;
 			if (image != null) {
 				BITMAP bm = new BITMAP();
-				OS.GetObject(Image.win32_getHandle(image, getZoom()), BITMAP.sizeof, bm);
+				OS.GetObject(Image.win32_getHandle(image, data.imageZoom), BITMAP.sizeof, bm);
 				width = bm.bmWidth;
 			} else {
 				long hwnd = OS.WindowFromDC(handle);
@@ -4384,7 +4385,7 @@ private void init(Drawable drawable, GCData data, long hDC) {
 	}
 	Image image = data.image;
 	if (image != null) {
-		data.hNullBitmap = OS.SelectObject(hDC, Image.win32_getHandle(image, data.nativeZoom));
+		data.hNullBitmap = OS.SelectObject(hDC, image.getHandle(data.imageZoom));
 		image.memGC = this;
 	}
 	int layout = data.layout;
