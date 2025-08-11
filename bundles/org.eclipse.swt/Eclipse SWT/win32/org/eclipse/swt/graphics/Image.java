@@ -829,10 +829,22 @@ private ImageHandle getImageMetadata(ZoomContext zoomContext) {
  * @noreference This method is not intended to be referenced by clients.
  */
 public static long win32_getHandle (Image image, int zoom) {
-	if (image.isDisposed()) {
+	return image.getHandle(zoom, zoom);
+}
+
+long getHandle (int targetZoom, int nativeZoom) {
+	if (isDisposed()) {
 		return 0L;
 	}
-	return image.getImageMetadata(new ZoomContext(zoom)).handle;
+	if (targetZoom == nativeZoom || !imageProvider.supportComplexZoom()) {
+		return getImageMetadata(new ZoomContext(targetZoom)).handle;
+	}
+
+	ZoomContext zoomContext = new ZoomContext(targetZoom, nativeZoom);
+	if (memGC != null) {
+		return imageProvider.newImageHandle(zoomContext).handle;
+	}
+	return getImageMetadata(zoomContext).handle;
 }
 
 /**
@@ -1772,6 +1784,7 @@ private long configureGC(GCData data, ZoomContext zoomContext) {
 		}
 		data.device = device;
 		data.nativeZoom = zoomContext.nativeZoom();
+		data.imageZoom = zoomContext.targetZoom();
 		data.image = this;
 		data.font = SWTFontProvider.getSystemFont(device, zoomContext.nativeZoom());
 	}
@@ -1932,6 +1945,10 @@ private record ZoomContext(int targetZoom, int nativeZoom) {
 private abstract class AbstractImageProviderWrapper {
 
 	protected abstract Rectangle getBounds(int zoom);
+
+	protected boolean supportComplexZoom() {
+		return false;
+	}
 
 	protected long configureGCData(GCData data) {
 		return configureGC(data, new ZoomContext(100));
@@ -2159,13 +2176,18 @@ private class PlainImageProviderWrapper extends AbstractImageProviderWrapper {
 	}
 
 	@Override
+	protected boolean supportComplexZoom() {
+		return memGC != null;
+	}
+
+	@Override
 	public Collection<Integer> getPreservedZoomLevels() {
 		return Collections.singleton(baseZoom);
 	}
 
 	@Override
 	protected long configureGCData(GCData data) {
-		return configureGC(data, new ZoomContext(DPIUtil.getDeviceZoom()));
+		return configureGC(data, new ZoomContext(DPIUtil.getDeviceZoom(), DPIUtil.getNativeDeviceZoom()));
 	}
 
 	@Override
@@ -2595,6 +2617,11 @@ private class ImageGcDrawerWrapper extends DynamicImageProviderWrapper {
 		this.drawer = imageGcDrawer;
 		this.width = width;
 		this.height = height;
+	}
+
+	@Override
+	protected boolean supportComplexZoom() {
+		return true;
 	}
 
 	@Override
