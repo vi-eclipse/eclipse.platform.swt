@@ -210,9 +210,9 @@ private void validateGCState() {
 }
 
 void checkGC(int mask) {
-	if (Device.strictChecks) {
+	StrictChecks.runIfStrictChecksEnabled(() -> {
 		validateGCState();
-	}
+	});
 	int state = data.state;
 	if ((state & mask) == mask) return;
 	state = (state ^ mask) & mask;
@@ -4402,10 +4402,10 @@ private void init(Drawable drawable, GCData data, long hDC) {
 }
 
 private static int extractZoom(long hDC) {
-	if (Device.strictChecks) {
+	StrictChecks.runIfStrictChecksEnabled(() -> {
 		System.err.println("***WARNING: GC is initialized with a missing zoom. This indicates an "
 				+ "incompatible custom Drawable implementation.");
-	}
+	});
 	long hwnd = OS.WindowFromDC(hDC);
 	long parentWindow = OS.GetAncestor(hwnd, OS.GA_ROOT);
 	long monitorParent = OS.MonitorFromWindow(parentWindow, OS.MONITOR_DEFAULTTONEAREST);
@@ -5725,7 +5725,7 @@ private class SetTransformOperation extends Operation {
  */
 public Point stringExtent (String string) {
 	if (string == null) SWT.error (SWT.ERROR_NULL_ARGUMENT);
-	return Win32DPIUtils.pixelToPoint(drawable, stringExtentInPixels(string), data.font.zoom);
+	return Win32DPIUtils.pixelToPoint(drawable, stringExtentInPixels(string), getZoom());
 }
 
 Point stringExtentInPixels (String string) {
@@ -5805,7 +5805,7 @@ public Point textExtent (String string) {
  * </ul>
  */
 public Point textExtent (String string, int flags) {
-	return Win32DPIUtils.pixelToPoint(drawable, textExtentInPixels(string, flags), data.font.zoom);
+	return Win32DPIUtils.pixelToPoint(drawable, textExtentInPixels(string, flags), getZoom());
 }
 
 Point textExtentInPixels(String string, int flags) {
@@ -5833,15 +5833,12 @@ Point textExtentInPixels(String string, int flags) {
 	return new Point(rect.right, rect.bottom);
 }
 
-void refreshFor(Drawable drawable, int zoom) {
+void refreshFor(Drawable drawable) {
 	if (drawable == null) SWT.error(SWT.ERROR_NULL_ARGUMENT);
-	if (zoom == getZoom()) {
-		return;
-	}
 	destroy();
 	GCData newData = new GCData();
 	originalData.copyTo(newData);
-	createGcHandle(drawable, newData, zoom);
+	createGcHandle(drawable, newData);
 }
 
 /**
@@ -5947,8 +5944,7 @@ private void storeAndApplyOperationForExistingHandle(Operation operation) {
 	operation.apply();
 }
 
-private void createGcHandle(Drawable drawable, GCData newData, int nativeZoom) {
-	newData.nativeZoom = nativeZoom;
+private void createGcHandle(Drawable drawable, GCData newData) {
 	long newHandle = drawable.internal_new_GC(newData);
 	if (newHandle == 0) SWT.error(SWT.ERROR_NO_HANDLES);
 	init(drawable, newData, newHandle);

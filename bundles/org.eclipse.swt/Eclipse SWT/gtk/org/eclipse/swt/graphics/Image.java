@@ -672,6 +672,9 @@ public Image(Device device, ImageDataProvider imageDataProvider) {
 	currentDeviceZoom = DPIUtil.getDeviceZoom();
 	initFromImageDataProvider(currentDeviceZoom);
 	init ();
+	StrictChecks.runIfStrictChecksEnabled(() -> {
+		DPIUtil.validateLinearScaling(imageDataProvider);
+	});
 }
 
 /**
@@ -1583,26 +1586,17 @@ public String toString () {
  * @noreference This method is not intended to be referenced by clients.
  */
 public static void drawScaled(GC gc, ImageData imageData, int width, int height, float scaleFactor) {
-	Image imageToDraw = new Image(gc.device, (ImageDataProvider) zoom -> imageData);
-	gc.drawImage (imageToDraw, 0, 0, width, height,
-			/* E.g. destWidth here is effectively DPIUtil.autoScaleDown (scaledWidth), but avoiding rounding errors.
-			 * Nevertheless, we still have some rounding errors due to the point-based API GC#drawImage(..).
-			 */
-			0, 0, Math.round (width * scaleFactor), Math.round (height * scaleFactor));
-	imageToDraw.dispose();
-}
-
-private final class GtkDPIUtil {
-
-	/**
-	 * Auto-scale up ImageData to device zoom that is at 100%.
-	 */
-	public static ImageData pointToPixel (Device device, final ImageData imageData) {
-		int imageDataZoomFactor = 100;
-		if (DPIUtil.getDeviceZoom() == imageDataZoomFactor || imageData == null || (device != null && !device.isAutoScalable())) return imageData;
-		float scaleFactor = (float) DPIUtil.getDeviceZoom() / imageDataZoomFactor;
-		return DPIUtil.autoScaleImageData(device, imageData, scaleFactor);
-	}
+	StrictChecks.runWithStrictChecksDisabled(() -> {
+		Image imageToDraw = new Image(gc.device, (ImageDataProvider) zoom -> imageData);
+		gc.drawImage(imageToDraw, 0, 0, width, height,
+				/*
+				 * E.g. destWidth here is effectively DPIUtil.autoScaleDown (scaledWidth), but
+				 * avoiding rounding errors. Nevertheless, we still have some rounding errors
+				 * due to the point-based API GC#drawImage(..).
+				 */
+				0, 0, Math.round(width * scaleFactor), Math.round(height * scaleFactor));
+		imageToDraw.dispose();
+	});
 }
 
 }
