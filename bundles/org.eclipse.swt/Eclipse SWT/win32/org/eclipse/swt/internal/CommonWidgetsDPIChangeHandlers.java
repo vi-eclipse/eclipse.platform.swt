@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.eclipse.swt.internal;
 
+import org.eclipse.swt.*;
 import org.eclipse.swt.custom.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.widgets.*;
@@ -43,7 +44,11 @@ public class CommonWidgetsDPIChangeHandlers {
 		// Refresh the image
 		Image image = item.getImage();
 		if (image != null) {
-			item.setImage(image);
+			try {
+				item.setImage(image);
+			} catch (SWTException exception) {
+				Display.getDefault().getRuntimeExceptionHandler().accept(exception);
+			}
 		}
 	}
 
