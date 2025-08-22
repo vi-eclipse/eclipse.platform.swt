@@ -15,6 +15,7 @@ package org.eclipse.swt.widgets;
 
 
 import org.eclipse.swt.*;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.*;
 
@@ -75,6 +76,11 @@ public abstract class Item extends Widget {
 public Item (Widget parent, int style) {
 	super (parent, style);
 	text = "";
+	this.addListener(SWT.ZoomChanged, event -> {
+		if (event instanceof ZoomChangedEvent zoomChangedEvent) {
+			handleItemDPIChange(zoomChangedEvent);
+		}
+	});
 }
 
 /**
@@ -222,6 +228,15 @@ boolean updateTextDirection(int textDirection) {
 		return true;
 	}
 	return textDirection == AUTO_TEXT_DIRECTION;
+}
+
+
+private void handleItemDPIChange(ZoomChangedEvent event) {
+	// Refresh the image
+	Image image = getImage();
+	if (image != null) {
+		setImage(image);
+	}
 }
 
 }

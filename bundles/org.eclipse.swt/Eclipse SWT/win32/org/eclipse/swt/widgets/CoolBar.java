@@ -15,6 +15,7 @@ package org.eclipse.swt.widgets;
 
 
 import org.eclipse.swt.*;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.*;
 import org.eclipse.swt.internal.win32.*;
@@ -58,7 +59,6 @@ public class CoolBar extends Composite {
 		WNDCLASS lpWndClass = new WNDCLASS ();
 		OS.GetClassInfo (0, ReBarClass, lpWndClass);
 		ReBarProc = lpWndClass.lpfnWndProc;
-		DPIZoomChangeRegistry.registerHandler(CoolBar::handleDPIChange, CoolBar.class);
 	}
 	static final int SEPARATOR_WIDTH = 2;
 	static final int MAX_WIDTH = 0x7FFF;
@@ -1201,18 +1201,17 @@ LRESULT wmNotifyChild (NMHDR hdr, long wParam, long lParam) {
 	return super.wmNotifyChild (hdr, wParam, lParam);
 }
 
-private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
-	if (!(widget instanceof CoolBar coolBar)) {
-		return;
-	}
-	Point[] sizes = coolBar.getItemSizesInPixels();
+@Override
+void handleDPIChange(ZoomChangedEvent event) {
+	super.handleDPIChange(event);
+	Point[] sizes = getItemSizesInPixels();
 	Point[] scaledSizes = new Point[sizes.length];
 	Point[] prefSizes = new Point[sizes.length];
 	Point[] minSizes = new Point[sizes.length];
-	int[] indices = coolBar.getWrapIndices();
-	int[] itemOrder = coolBar.getItemOrder();
+	int[] indices = getWrapIndices();
+	int[] itemOrder = getItemOrder();
 
-	CoolItem[] items = coolBar.getItems();
+	CoolItem[] items = getItems();
 	for (int index = 0; index < sizes.length; index++) {
 		minSizes[index] = items[index].getMinimumSizeInPixels();
 		prefSizes[index] = items[index].getPreferredSizeInPixels();
@@ -1223,24 +1222,24 @@ private static void handleDPIChange(Widget widget, int newZoom, float scalingFac
 
 		Control control = item.control;
 		if (control != null) {
-			DPIZoomChangeRegistry.applyChange(control, newZoom, scalingFactor);
+			control.sendZoomChangedEvent(event);
 			item.setControl(control);
 		}
 
 		Point preferredControlSize =  item.getControl().computeSizeInPixels(SWT.DEFAULT, SWT.DEFAULT, true);
 		int controlWidth = preferredControlSize.x;
 		int controlHeight = preferredControlSize.y;
-		if (((coolBar.style & SWT.VERTICAL) != 0)) {
-			scaledSizes[index] = new Point(Math.round((sizes[index].x)*scalingFactor), Math.max(Math.round((sizes[index].y)*scalingFactor),0));
-			item.setMinimumSizeInPixels(Math.round(minSizes[index].x*scalingFactor), Math.max(Math.round((minSizes[index].y)*scalingFactor),controlWidth));
-			item.setPreferredSizeInPixels(Math.round(prefSizes[index].x*scalingFactor), Math.max(Math.round((prefSizes[index].y)*scalingFactor),controlWidth));
+		if (((style & SWT.VERTICAL) != 0)) {
+			scaledSizes[index] = new Point(Math.round((sizes[index].x) * event.getScalingFactor()), Math.max(Math.round((sizes[index].y) * event.getScalingFactor()),0));
+			item.setMinimumSizeInPixels(Math.round(minSizes[index].x * event.getScalingFactor()), Math.max(Math.round((minSizes[index].y) * event.getScalingFactor()),controlWidth));
+			item.setPreferredSizeInPixels(Math.round(prefSizes[index].x * event.getScalingFactor()), Math.max(Math.round((prefSizes[index].y) * event.getScalingFactor()),controlWidth));
 		} else {
-			scaledSizes[index] = new Point(Math.round((sizes[index].x)*scalingFactor),Math.max(Math.round((sizes[index].y)*scalingFactor),0));
-			item.setMinimumSizeInPixels(Math.round(minSizes[index].x*scalingFactor), controlHeight);
-			item.setPreferredSizeInPixels(Math.round(prefSizes[index].x*scalingFactor), controlHeight);
+			scaledSizes[index] = new Point(Math.round((sizes[index].x) * event.getScalingFactor()),Math.max(Math.round((sizes[index].y) * event.getScalingFactor()),0));
+			item.setMinimumSizeInPixels(Math.round(minSizes[index].x * event.getScalingFactor()), controlHeight);
+			item.setPreferredSizeInPixels(Math.round(prefSizes[index].x * event.getScalingFactor()), controlHeight);
 		}
 	}
-	coolBar.setItemLayoutInPixels(itemOrder, indices, scaledSizes);
-	coolBar.updateLayout(true);
+	setItemLayoutInPixels(itemOrder, indices, scaledSizes);
+	updateLayout(true);
 }
 }

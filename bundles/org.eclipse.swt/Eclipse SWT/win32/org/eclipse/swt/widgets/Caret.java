@@ -15,6 +15,7 @@ package org.eclipse.swt.widgets;
 
 
 import org.eclipse.swt.*;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.*;
 import org.eclipse.swt.internal.win32.*;
@@ -48,10 +49,6 @@ public class Caret extends Widget {
 	Image image;
 	Font font;
 	LOGFONT oldFont;
-
-static {
-	DPIZoomChangeRegistry.registerHandler(Caret::handleDPIChange, Caret.class);
-}
 
 /**
  * Constructs a new instance of this class given its parent
@@ -669,18 +666,16 @@ public static void win32_setHeight(Caret caret, int height) {
 	if(caret.isVisible && caret.hasFocus()) caret.resize();
 }
 
-private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
-	if (!(widget instanceof Caret caret)) {
-		return;
-	}
-
-	Image image = caret.getImage();
+@Override
+void handleDPIChange(ZoomChangedEvent event) {
+	super.handleDPIChange(event);
+	Image image = getImage();
 	if (image != null) {
-		caret.setImage(image);
+		setImage(image);
 	}
 
-	if (caret.font != null) {
-		caret.setFont(caret.font);
+	if (font != null) {
+		setFont(font);
 	}
 }
 }

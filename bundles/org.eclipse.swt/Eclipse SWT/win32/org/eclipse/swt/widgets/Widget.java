@@ -142,7 +142,6 @@ public abstract class Widget {
 		icce.dwSize = INITCOMMONCONTROLSEX.sizeof;
 		icce.dwICC = 0xffff;
 		OS.InitCommonControlsEx (icce);
-		DPIZoomChangeRegistry.registerHandler(Widget::handleDPIChange, Widget.class);
 	}
 
 /**
@@ -191,6 +190,15 @@ public Widget (Widget parent, int style) {
 	reskinWidget ();
 	notifyCreationTracker();
 	this.setData(DATA_NATIVE_ZOOM, this.nativeZoom);
+	registerDPIChangeListener();
+}
+
+void registerDPIChangeListener() {
+	this.addListener(SWT.ZoomChanged, event -> {
+		if (event instanceof ZoomChangedEvent zoomChangedEvent) {
+			handleDPIChange(zoomChangedEvent);
+		}
+	});
 }
 
 void _addListener (int eventType, Listener listener) {
@@ -2717,9 +2725,37 @@ int getZoom() {
 	return DPIUtil.getZoomForAutoscaleProperty(nativeZoom);
 }
 
-private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
-	widget.nativeZoom = newZoom;
-	widget.setData(DATA_NATIVE_ZOOM, newZoom);
+void handleDPIChange(ZoomChangedEvent event) {
+	int newZoom = event.detail;
+	this.nativeZoom = newZoom;
+	this.setData(DATA_NATIVE_ZOOM, newZoom);
+}
+
+//record ShellChildCount(Shell shell, AtomicInteger childCount) {}
+
+void sendZoomChangedEvent(ZoomChangedEvent parentEvent) {
+	ZoomChangedEvent event = parentEvent.createFor(this);
+//	event.type = SWT.ZoomChanged;
+//	event.widget = this;
+//	event.detail = parentEvent.detail;
+//	event.doit = true;
+//	event.data = parentEvent.data;
+//	ShellChildCount shellChildCount = (ShellChildCount) parentEvent.data;
+//	shellChildCount.childCount.incrementAndGet();
+	event.getHandleDPIChangedScheduledTasksCount().incrementAndGet();
+	getDisplay().asyncExec(() -> {
+		try {
+			if(!this.isDisposed()) {
+				notifyListeners(SWT.ZoomChanged, event);
+			}
+		} finally {
+			if (event.getHandleDPIChangedScheduledTasksCount().decrementAndGet() <= 0) {
+				event.getShell().WM_SIZE(0, 0);
+//				event.getShell().update(true);
+//				shellChildCount.childCount.set(0);
+			}
+		}
+	});
 }
 
 int getSystemMetrics(int nIndex) {

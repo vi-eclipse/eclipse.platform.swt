@@ -15,6 +15,7 @@ package org.eclipse.swt.widgets;
 
 
 import org.eclipse.swt.*;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.*;
 import org.eclipse.swt.internal.win32.*;
@@ -45,10 +46,6 @@ public class TableItem extends Item {
 	boolean checked, grayed, cached;
 	int imageIndent, background = -1, foreground = -1;
 	int [] cellBackground, cellForeground;
-
-	static {
-		DPIZoomChangeRegistry.registerHandler(TableItem::handleDPIChange, TableItem.class);
-	}
 
 /**
  * Constructs a new instance of this class given its parent
@@ -1271,19 +1268,17 @@ public void setText (String string) {
 	setText (0, string);
 }
 
-private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
-	if (!(widget instanceof TableItem tableItem)) {
-		return;
-	}
-	Font font = tableItem.font;
+@Override
+void handleDPIChange(ZoomChangedEvent event) {
+	super.handleDPIChange(event);
 	if (font != null) {
-		tableItem.setFont(tableItem.font);
+		setFont(font);
 	}
-	Font[] cellFonts = tableItem.cellFont;
+	Font[] cellFonts = cellFont;
 	if (cellFonts != null) {
 		for (int index = 0; index < cellFonts.length; index++) {
 			Font cellFont = cellFonts[index];
-			cellFonts[index] = cellFont == null ? null : Font.win32_new(cellFont, tableItem.getNativeZoom());
+			cellFonts[index] = cellFont == null ? null : Font.win32_new(cellFont, getNativeZoom());
 		}
 	}
 }

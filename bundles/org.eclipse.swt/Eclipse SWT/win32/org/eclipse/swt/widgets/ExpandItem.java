@@ -14,6 +14,7 @@
 package org.eclipse.swt.widgets;
 
 import org.eclipse.swt.*;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.*;
 import org.eclipse.swt.internal.win32.*;
@@ -47,10 +48,6 @@ public class ExpandItem extends Item {
 	static final int TEXT_INSET = 6;
 	static final int BORDER = 1;
 	static final int CHEVRON_SIZE = 24;
-
-	static {
-		DPIZoomChangeRegistry.registerHandler(ExpandItem::handleDPIChange, ExpandItem.class);
-	}
 
 /**
  * Constructs a new instance of this class given its parent
@@ -532,14 +529,13 @@ public void setText (String string) {
 	redraw (true);
 }
 
-private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
-	if (!(widget instanceof ExpandItem item)) {
-		return;
-	}
-	if (item.height != 0 || item.width != 0) {
-		int newWidth = Math.round(item.width * scalingFactor);
-		int newHeight = Math.round(item.height * scalingFactor);
-		item.setBoundsInPixels(item.x, item.y, newWidth, newHeight, true, true);
+@Override
+void handleDPIChange(ZoomChangedEvent event) {
+	super.handleDPIChange(event);
+	if (height != 0 || width != 0) {
+		int newWidth = Math.round(width * event.getScalingFactor());
+		int newHeight = Math.round(height * event.getScalingFactor());
+		setBoundsInPixels(x, y, newWidth, newHeight, true, true);
 	}
 }
 }

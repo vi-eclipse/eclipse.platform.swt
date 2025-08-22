@@ -16,6 +16,7 @@ package org.eclipse.swt.widgets;
 
 
 import org.eclipse.swt.*;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.*;
 import org.eclipse.swt.internal.win32.*;
@@ -63,7 +64,6 @@ public class Label extends Control {
 		WNDCLASS lpWndClass = new WNDCLASS ();
 		OS.GetClassInfo (0, LabelClass, lpWndClass);
 		LabelProc = lpWndClass.lpfnWndProc;
-		DPIZoomChangeRegistry.registerHandler(Label::handleDPIChange, Label.class);
 	}
 
 /**
@@ -621,13 +621,12 @@ LRESULT wmDrawChild (long wParam, long lParam) {
 	return null;
 }
 
-private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
-	if (!(widget instanceof Label label)) {
-		return;
-	}
-	Image image = label.getImage();
+@Override
+void handleDPIChange(ZoomChangedEvent event) {
+	super.handleDPIChange(event);
+	Image image = getImage();
 	if (image != null) {
-		label.setImage(image);
+		setImage(image);
 	}
 }
 }

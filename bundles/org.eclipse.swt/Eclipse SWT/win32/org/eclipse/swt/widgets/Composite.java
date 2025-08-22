@@ -15,6 +15,7 @@ package org.eclipse.swt.widgets;
 
 
 import org.eclipse.swt.*;
+import org.eclipse.swt.events.*;
 import org.eclipse.swt.graphics.*;
 import org.eclipse.swt.internal.*;
 import org.eclipse.swt.internal.win32.*;
@@ -56,10 +57,6 @@ public class Composite extends Scrollable {
 	int layoutCount, backgroundMode;
 
 	static final int TOOLTIP_LIMIT = 4096;
-
-	static {
-		DPIZoomChangeRegistry.registerHandler(Composite::handleDPIChange, Composite.class);
-	}
 
 /**
  * Prevents uninitialized instances from being created outside the package.
@@ -1977,13 +1974,12 @@ public String toString() {
 	return super.toString() + " [layout=" + layout + "]";
 }
 
-private static void handleDPIChange(Widget widget, int newZoom, float scalingFactor) {
-	if (!(widget instanceof Composite composite)) {
-		return;
+@Override
+void handleDPIChange(ZoomChangedEvent event) {
+	super.handleDPIChange(event);
+	for (Control child : getChildren()) {
+		child.sendZoomChangedEvent(event);
 	}
-	for (Control child : composite.getChildren()) {
-		DPIZoomChangeRegistry.applyChange(child, newZoom, scalingFactor);
-	}
-	composite.redrawInPixels (null, true);
+//	redrawInPixels (null, true);
 }
 }
