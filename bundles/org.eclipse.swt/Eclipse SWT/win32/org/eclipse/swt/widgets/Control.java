@@ -4960,7 +4960,6 @@ void handleMonitorSpecificDpiChange(int newNativeZoom, Rectangle newBoundsInPixe
 	float scalingFactor = 1f * DPIUtil.getZoomForAutoscaleProperty(newNativeZoom) / DPIUtil.getZoomForAutoscaleProperty(nativeZoom);
 	DPIUtil.setDeviceZoom (newNativeZoom);
 	DPIZoomChangeRegistry.applyChange(this, newNativeZoom, scalingFactor);
-	this.setBoundsInPixels(newBoundsInPixels.x, newBoundsInPixels.y, newBoundsInPixels.width, newBoundsInPixels.height);
 }
 
 LRESULT WM_DPICHANGED (long wParam, long lParam) {
