@@ -222,6 +222,7 @@ To contribute a new snippet, [create a snippet contribution as a pull request](h
 - [rotate and flip an image](https://github.com/eclipse-platform/eclipse.platform.swt/tree/master/examples/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet139.java) – [(preview)](https://github.com/eclipse-platform/eclipse.platform.swt/blob/master/examples/org.eclipse.swt.snippets/previews/Snippet139.png "Preview for Snippet 139")
 - [write an animated GIF](https://github.com/eclipse-platform/eclipse.platform.swt/tree/master/examples/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet194.java)
 - [write a PNG](https://github.com/eclipse-platform/eclipse.platform.swt/tree/master/examples/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet246.java)
+- [sadasdasndadas](https://github.com/eclipse-platform/eclipse.platform.swt/tree/master/examples/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet387.java)– [(preview)](https://github.com/eclipse-platform/eclipse.platform.swt/blob/master/examples/org.eclipse.swt.snippets/previews/Snippet378.png "Preview for Snippet 387")
 
 ### **Label**
 - [create a label (with an image)](https://github.com/eclipse-platform/eclipse.platform.swt/tree/master/examples/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet34.java) – [(preview)](https://github.com/eclipse-platform/eclipse.platform.swt/blob/master/examples/org.eclipse.swt.snippets/previews/Snippet34.png "Preview for Snippet 34")
