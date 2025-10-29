@@ -411,16 +411,24 @@ public static sealed class OfFloat extends Rectangle permits Rectangle.WithMonit
 
 	private float residualX, residualY, residualWidth, residualHeight;
 
+	public RoundingMode roundingMode;
+
 	public OfFloat(int x, int y, int width, int height) {
 		super(x, y, width, height);
+		this.roundingMode = RoundingMode.ROUND;
 	}
 
 	public OfFloat(float x, float y, float width, float height) {
-		super(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
+		this(x, y, width, height, RoundingMode.ROUND);
+	}
+
+	public OfFloat(float x, float y, float width, float height, RoundingMode roundingMode) {
+		super(Math.round(x), Math.round(y), roundingMode.round(width), roundingMode.round(height));
 		this.residualX = x - this.x;
 		this.residualY = y - this.y;
 		this.residualWidth = width - this.width;
 		this.residualHeight = height - this.height;
+		this.roundingMode = roundingMode;
 	}
 
 	public float getX() {
@@ -450,18 +458,18 @@ public static sealed class OfFloat extends Rectangle permits Rectangle.WithMonit
 	}
 
 	public void setWidth(float width) {
-		this.width = Math.round(width);
+		this.width = roundingMode.round(width);
 		this.residualWidth = width - this.width;
 	}
 
 	public void setHeight(float height) {
-		this.height = Math.round(height);
+		this.height = roundingMode.round(height);
 		this.residualHeight = height - this.height;
 	}
 
 	@Override
 	public Rectangle.OfFloat clone() {
-		return new Rectangle.OfFloat(getX(), getY(), getWidth(), getHeight());
+		return new Rectangle.OfFloat(getX(), getY(), getWidth(), getHeight(), roundingMode);
 	}
 
 	/**
