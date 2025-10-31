@@ -33,18 +33,6 @@ import org.eclipse.swt.widgets.*;
  * @noreference This class is not intended to be referenced by clients
  */
 public class Win32DPIUtils {
-	/**
-	 * System property to enable to scale the application on runtime
-	 * when a DPI change is detected.
-	 * <ul>
-	 * <li>"true": the application is scaled on DPI changes</li>
-	 * <li>"false": the application will remain in its initial scaling</li>
-	 * </ul>
-	 * <b>Important:</b> This flag is only parsed and used on Win32. Setting it to
-	 * true on GTK or cocoa will be ignored.
-	 */
-	private static final String SWT_AUTOSCALE_UPDATE_ON_RUNTIME = "swt.autoScale.updateOnRuntime";
-
 	static {
 	    DPIUtil.setUseSmoothScalingByDefaultProvider(() -> isMonitorSpecificScalingActive());
 	}
@@ -278,7 +266,7 @@ public class Win32DPIUtils {
 	}
 
 	public static void setMonitorSpecificScaling(boolean activate) {
-		System.setProperty(SWT_AUTOSCALE_UPDATE_ON_RUNTIME, Boolean.toString(activate));
+		System.setProperty(DPIUtil.SWT_AUTOSCALE_UPDATE_ON_RUNTIME, Boolean.toString(activate));
 	}
 
 	public static void setAutoScaleForMonitorSpecificScaling() {
@@ -323,8 +311,7 @@ public class Win32DPIUtils {
 	}
 
 	public static boolean isMonitorSpecificScalingActive() {
-		boolean updateOnRuntimeValue = Boolean.getBoolean (SWT_AUTOSCALE_UPDATE_ON_RUNTIME);
-		return updateOnRuntimeValue;
+		return DPIUtil.isMonitorSpecificScalingActive();
 	}
 
 	public static int getPrimaryMonitorZoomAtStartup() {
