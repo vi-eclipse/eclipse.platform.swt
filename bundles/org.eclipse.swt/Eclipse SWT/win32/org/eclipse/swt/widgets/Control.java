@@ -121,7 +121,6 @@ Control () {
 public Control (Composite parent, int style) {
 	super (parent, style);
 	this.parent = parent;
-	this.autoScaleDisabled = parent.autoScaleDisabled;
 	createWidget ();
 }
 
@@ -1207,7 +1206,7 @@ int getBorderWidthInPixels () {
  */
 public Rectangle getBounds (){
 	checkWidget ();
-	return Win32DPIUtils.pixelToPoint(getBoundsInPixels (), getZoom());
+	return Win32DPIUtils.pixelToPoint(getBoundsInPixels (), getScalingZoom());
 }
 
 Rectangle getBoundsInPixels () {
@@ -1286,6 +1285,10 @@ public void setData(String key, Object value) {
 			this.nativeZoom = getShellZoom();
 		}
 	}
+}
+
+public void setAutoscaleDisabled(boolean autoscaleDisabled) {
+	setData(DATA_AUTOSCALE_DISABLED, autoscaleDisabled);
 }
 
 /**
@@ -1403,7 +1406,7 @@ public Object getLayoutData () {
 public Point getLocation () {
 	checkWidget ();
 	//For a location the closest point values is okay
-	return Win32DPIUtils.pixelToPointAsLocation(getLocationInPixels(), getZoom());
+	return Win32DPIUtils.pixelToPointAsLocation(getLocationInPixels(), getScalingZoom());
 }
 
 Point getLocationInPixels () {
@@ -1559,7 +1562,7 @@ public Shell getShell () {
  */
 public Point getSize (){
 	checkWidget ();
-	return Win32DPIUtils.pixelToPointAsSize(getSizeInPixels (), getZoom());
+	return Win32DPIUtils.pixelToPointAsSize(getSizeInPixels (), getScalingZoom());
 }
 
 Point getSizeInPixels () {
@@ -3294,7 +3297,7 @@ void setBoundsInPixels (int x, int y, int width, int height, int flags, boolean 
 public void setBounds (Rectangle rect) {
 	checkWidget ();
 	if (rect == null) error (SWT.ERROR_NULL_ARGUMENT);
-	int zoom = autoScaleDisabled && parent != null ? parent.getZoom() : getZoom();
+	int zoom = getScalingZoom();
 	setBoundsInPixels(Win32DPIUtils.pointToPixel(rect, zoom));
 }
 
@@ -3552,7 +3555,7 @@ public void setLayoutData (Object layoutData) {
  */
 public void setLocation (int x, int y) {
 	checkWidget ();
-	int zoom = autoScaleDisabled && parent != null ? parent.getZoom() : getZoom();
+	int zoom = getScalingZoom();
 	x = DPIUtil.pointToPixel(x, zoom);
 	y = DPIUtil.pointToPixel(y, zoom);
 	setLocationInPixels(x, y);
@@ -3809,7 +3812,7 @@ public void setRegion (Region region) {
  */
 public void setSize (int width, int height) {
 	checkWidget ();
-	int zoom = autoScaleDisabled && parent != null ? parent.getZoom() : getZoom();
+	int zoom = getScalingZoom();
 	width = DPIUtil.pointToPixel(width, zoom);
 	height = DPIUtil.pointToPixel(height, zoom);
 	setSizeInPixels(width, height);
@@ -4822,6 +4825,13 @@ int getShellZoom() {
 		return shellZoom;
 	}
 	return nativeZoom;
+}
+
+int getScalingZoom() {
+	if (parent != null) {
+		return parent.getZoom();
+	}
+	return getZoom();
 }
 
 abstract TCHAR windowClass ();
