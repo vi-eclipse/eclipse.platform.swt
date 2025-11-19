@@ -288,7 +288,7 @@ Control computeTabRoot () {
 	int bits1 = OS.GetWindowLong (handle, OS.GWL_STYLE);
 	int bits2 = OS.GetWindowLong (handle, OS.GWL_EXSTYLE);
 	boolean hasMenu = OS.GetMenu (handle) != 0;
-	adjustWindowRectEx(rect, bits1, hasMenu, bits2);
+	adjustWindowRectEx(rect, bits1, hasMenu, bits2, zoom);
 
 	/* Get the size of the scroll bars */
 	if (horizontalBar != null) rect.bottom += getSystemMetrics (OS.SM_CYHSCROLL);

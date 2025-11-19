@@ -2716,8 +2716,11 @@ int getSystemMetrics(int nIndex) {
 }
 
 boolean adjustWindowRectEx(RECT lpRect, int dwStyle, boolean bMenu, int dwExStyle) {
-	return OS.AdjustWindowRectExForDpi (lpRect, dwStyle, bMenu, dwExStyle, DPIUtil.mapZoomToDPI(nativeZoom));
+	return adjustWindowRectEx(lpRect, dwStyle, bMenu, dwExStyle, nativeZoom);
 }
 
+boolean adjustWindowRectEx(RECT lpRect, int dwStyle, boolean bMenu, int dwExStyle, int zoom) {
+	return OS.AdjustWindowRectExForDpi (lpRect, dwStyle, bMenu, dwExStyle, DPIUtil.mapZoomToDPI(zoom));
+}
 
 }
