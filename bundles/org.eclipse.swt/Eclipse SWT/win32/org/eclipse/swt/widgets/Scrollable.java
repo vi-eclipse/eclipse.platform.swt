@@ -132,8 +132,8 @@ Rectangle computeTrimInPixels (int x, int y, int width, int height, int zoom) {
 	int bits1 = OS.GetWindowLong (scrolledHandle, OS.GWL_STYLE);
 	int bits2 = OS.GetWindowLong (scrolledHandle, OS.GWL_EXSTYLE);
 	adjustWindowRectEx(rect, bits1, false, bits2, zoom);
-	if (horizontalBar != null) rect.bottom += getSystemMetrics (OS.SM_CYHSCROLL);
-	if (verticalBar != null) rect.right += getSystemMetrics (OS.SM_CXVSCROLL);
+	if (horizontalBar != null) rect.bottom += getSystemMetrics (OS.SM_CYHSCROLL, zoom);
+	if (verticalBar != null) rect.right += getSystemMetrics (OS.SM_CXVSCROLL, zoom);
 	int nWidth = rect.right - rect.left, nHeight = rect.bottom - rect.top;
 	return new Rectangle (rect.left, rect.top, nWidth, nHeight);
 }

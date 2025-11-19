@@ -153,13 +153,13 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	RECT rect = new RECT ();
 	OS.SendMessage (handle, OS.TBM_GETTHUMBRECT, 0, rect);
 	if ((style & SWT.HORIZONTAL) != 0) {
-		width += getSystemMetrics (OS.SM_CXHSCROLL) * 10;
-		int scrollY = getSystemMetrics (OS.SM_CYHSCROLL);
+		width += getSystemMetrics (OS.SM_CXHSCROLL, zoom) * 10;
+		int scrollY = getSystemMetrics (OS.SM_CYHSCROLL, zoom);
 		height += (rect.top * 2) + scrollY + (scrollY / 3);
 	} else {
-		int scrollX = getSystemMetrics (OS.SM_CXVSCROLL);
+		int scrollX = getSystemMetrics (OS.SM_CXVSCROLL, zoom);
 		width += (rect.left * 2) + scrollX + (scrollX / 3);
-		height += getSystemMetrics (OS.SM_CYVSCROLL) * 10;
+		height += getSystemMetrics (OS.SM_CYVSCROLL, zoom) * 10;
 	}
 	if (hintInPoints.x != SWT.DEFAULT) width = hintInPixels.x + (border * 2);
 	if (hintInPoints.y != SWT.DEFAULT) height = hintInPixels.y + (border * 2);

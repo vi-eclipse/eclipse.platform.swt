@@ -291,8 +291,8 @@ Control computeTabRoot () {
 	adjustWindowRectEx(rect, bits1, hasMenu, bits2, zoom);
 
 	/* Get the size of the scroll bars */
-	if (horizontalBar != null) rect.bottom += getSystemMetrics (OS.SM_CYHSCROLL);
-	if (verticalBar != null) rect.right += getSystemMetrics (OS.SM_CXVSCROLL);
+	if (horizontalBar != null) rect.bottom += getSystemMetrics (OS.SM_CYHSCROLL, zoom);
+	if (verticalBar != null) rect.right += getSystemMetrics (OS.SM_CXVSCROLL, zoom);
 
 	/* Compute the height of the menu bar */
 	if (hasMenu) {
@@ -301,7 +301,7 @@ Control computeTabRoot () {
 		OS.SendMessage (handle, OS.WM_NCCALCSIZE, 0, testRect);
 		while ((testRect.bottom - testRect.top) < height) {
 			if (testRect.bottom - testRect.top == 0) break;
-			rect.top -= getSystemMetrics (OS.SM_CYMENU) - getSystemMetrics (OS.SM_CYBORDER);
+			rect.top -= getSystemMetrics (OS.SM_CYMENU, zoom) - getSystemMetrics (OS.SM_CYBORDER, zoom);
 			OS.SetRect (testRect, 0, 0, rect.right - rect.left, rect.bottom - rect.top);
 			OS.SendMessage (handle, OS.WM_NCCALCSIZE, 0, testRect);
 		}

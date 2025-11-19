@@ -329,11 +329,11 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	int width = 0, height = 0, border = getBorderWidthInPixels ();
 	if ((style & SWT.ARROW) != 0) {
 		if ((style & (SWT.UP | SWT.DOWN)) != 0) {
-			width += getSystemMetrics (OS.SM_CXVSCROLL);
-			height += getSystemMetrics (OS.SM_CYVSCROLL);
+			width += getSystemMetrics (OS.SM_CXVSCROLL, zoom);
+			height += getSystemMetrics (OS.SM_CYVSCROLL, zoom);
 		} else {
-			width += getSystemMetrics (OS.SM_CXHSCROLL);
-			height += getSystemMetrics (OS.SM_CYHSCROLL);
+			width += getSystemMetrics (OS.SM_CXHSCROLL, zoom);
+			height += getSystemMetrics (OS.SM_CYHSCROLL, zoom);
 		}
 	} else {
 		if ((style & SWT.COMMAND) != 0) {

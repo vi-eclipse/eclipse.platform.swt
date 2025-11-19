@@ -1479,10 +1479,10 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	int border = getBorderWidthInPixels ();
 	width += border * 2;  height += border * 2;
 	if ((style & SWT.V_SCROLL) != 0) {
-		width += getSystemMetrics (OS.SM_CXVSCROLL);
+		width += getSystemMetrics (OS.SM_CXVSCROLL, zoom);
 	}
 	if ((style & SWT.H_SCROLL) != 0) {
-		height += getSystemMetrics (OS.SM_CYHSCROLL);
+		height += getSystemMetrics (OS.SM_CYHSCROLL, zoom);
 	}
 	return new Point (width, height);
 }

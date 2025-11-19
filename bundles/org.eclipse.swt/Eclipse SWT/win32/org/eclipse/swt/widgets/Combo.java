@@ -656,8 +656,8 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 		width += pcbi.itemLeft + (pcbi.buttonRight - pcbi.buttonLeft);
 		height = (pcbi.buttonBottom - pcbi.buttonTop) + pcbi.buttonTop * 2;
 	} else {
-		int border = getSystemMetrics (OS.SM_CXEDGE);
-		width += getSystemMetrics (OS.SM_CXVSCROLL) + border * 2;
+		int border = getSystemMetrics (OS.SM_CXEDGE, zoom);
+		width += getSystemMetrics (OS.SM_CXVSCROLL, zoom) + border * 2;
 		int textHeight = (int)OS.SendMessage (handle, OS.CB_GETITEMHEIGHT, -1, 0);
 		if ((style & SWT.DROP_DOWN) != 0) {
 			height = textHeight + 6;
@@ -666,7 +666,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 		}
 	}
 	if ((style & SWT.SIMPLE) != 0 && (style & SWT.H_SCROLL) != 0) {
-		height += getSystemMetrics (OS.SM_CYHSCROLL);
+		height += getSystemMetrics (OS.SM_CYHSCROLL, zoom);
 	}
 	return new Point (width, height);
 }

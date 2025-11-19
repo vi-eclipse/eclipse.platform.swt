@@ -136,7 +136,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	Point hintInPixels = Win32DPIUtils.pointToPixelAsSufficientlyLargeSize(hintInPoints, zoom);
 	int width = 0, height = 0, border = getBorderWidthInPixels ();
 	if ((style & SWT.SEPARATOR) != 0) {
-		int lineWidth = getSystemMetrics (OS.SM_CXBORDER);
+		int lineWidth = getSystemMetrics (OS.SM_CXBORDER, zoom);
 		if ((style & SWT.HORIZONTAL) != 0) {
 			width = DEFAULT_WIDTH;  height = lineWidth * 2;
 		} else {

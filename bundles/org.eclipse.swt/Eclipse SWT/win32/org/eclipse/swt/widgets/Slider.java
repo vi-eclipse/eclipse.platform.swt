@@ -184,11 +184,11 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	int border = getBorderWidthInPixels ();
 	int width = border * 2, height = border * 2;
 	if ((style & SWT.HORIZONTAL) != 0) {
-		width += getSystemMetrics (OS.SM_CXHSCROLL) * 10;
-		height += getSystemMetrics (OS.SM_CYHSCROLL);
+		width += getSystemMetrics (OS.SM_CXHSCROLL, zoom) * 10;
+		height += getSystemMetrics (OS.SM_CYHSCROLL, zoom);
 	} else {
-		width += getSystemMetrics (OS.SM_CXVSCROLL);
-		height += getSystemMetrics (OS.SM_CYVSCROLL) * 10;
+		width += getSystemMetrics (OS.SM_CXVSCROLL, zoom);
+		height += getSystemMetrics (OS.SM_CYVSCROLL, zoom) * 10;
 	}
 	if (hintInPoints.x != SWT.DEFAULT) width = hintInPixels.x + (border * 2);
 	if (hintInPoints.y != SWT.DEFAULT) height = hintInPixels.y + (border * 2);

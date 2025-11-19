@@ -299,7 +299,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 		height = hintInPixels.y;
 	} else {
 		int borderAdjustment = (style & SWT.BORDER) != 0 ? -1 : 3;
-		int upDownHeight = getSystemMetrics (OS.SM_CYVSCROLL);
+		int upDownHeight = getSystemMetrics (OS.SM_CYVSCROLL, zoom);
 		height = Math.max(height, upDownHeight + borderAdjustment);
 	}
 
@@ -342,7 +342,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 		width += 2;
 		height += 2;
 	}
-	width += getSystemMetrics (OS.SM_CXVSCROLL);
+	width += getSystemMetrics (OS.SM_CXVSCROLL, zoom);
 	return new Rectangle (x, y, width, height);
 }
 

@@ -773,8 +773,8 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 
 		// When WS_BORDER is used instead of WS_EX_CLIENTEDGE, compensate the size difference
 		if (isUseWsBorder ()) {
-			int dx = getSystemMetrics (OS.SM_CXEDGE) - getSystemMetrics (OS.SM_CXBORDER);
-			int dy = getSystemMetrics (OS.SM_CYEDGE) - getSystemMetrics (OS.SM_CYBORDER);
+			int dx = getSystemMetrics (OS.SM_CXEDGE, zoom) - getSystemMetrics (OS.SM_CXBORDER, zoom);
+			int dy = getSystemMetrics (OS.SM_CYEDGE, zoom) - getSystemMetrics (OS.SM_CYBORDER, zoom);
 			rect.x -= dx;
 			rect.y -= dy;
 			rect.width += 2*dx;
