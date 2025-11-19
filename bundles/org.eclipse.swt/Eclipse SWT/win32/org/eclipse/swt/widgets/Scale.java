@@ -148,7 +148,7 @@ static int checkStyle (int style) {
 Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	checkWidget ();
 	Point hintInPixels = Win32DPIUtils.pointToPixelAsSufficientlyLargeSize(hintInPoints, zoom);
-	int border = getBorderWidthInPixels ();
+	int border = getBorderWidthInPixels (zoom);
 	int width = border * 2, height = border * 2;
 	RECT rect = new RECT ();
 	OS.SendMessage (handle, OS.TBM_GETTHUMBRECT, 0, rect);

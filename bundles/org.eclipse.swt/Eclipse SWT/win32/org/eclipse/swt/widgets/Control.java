@@ -541,7 +541,7 @@ void checkBackground () {
 }
 
 void checkBorder () {
-	if (getBorderWidthInPixels () == 0) style &= ~SWT.BORDER;
+	if (getBorderWidthInPixels (nativeZoom) == 0) style &= ~SWT.BORDER;
 }
 
 void checkBuffered () {
@@ -638,7 +638,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	Point hintInPixels = Win32DPIUtils.pointToPixelAsSufficientlyLargeSize(hintInPoints, zoom);
 	if (hintInPoints.x != SWT.DEFAULT) width = hintInPixels.x;
 	if (hintInPoints.y != SWT.DEFAULT) height = hintInPixels.y;
-	int border = getBorderWidthInPixels ();
+	int border = getBorderWidthInPixels (zoom);
 	width += border * 2;
 	height += border * 2;
 	return new Point (width, height);
@@ -1174,14 +1174,15 @@ int getBackgroundPixel () {
  */
 public int getBorderWidth () {
 	checkWidget ();
-	return DPIUtil.pixelToPoint(getBorderWidthInPixels (), getZoom());
+	int zoom = getZoom();
+	return DPIUtil.pixelToPoint(getBorderWidthInPixels (zoom), zoom);
 }
 
-int getBorderWidthInPixels () {
+int getBorderWidthInPixels (int zoom) {
 	long borderHandle = borderHandle ();
 	int bits1 = OS.GetWindowLong (borderHandle, OS.GWL_EXSTYLE);
-	if ((bits1 & OS.WS_EX_CLIENTEDGE) != 0) return getSystemMetrics (OS.SM_CXEDGE);
-	if ((bits1 & OS.WS_EX_STATICEDGE) != 0) return getSystemMetrics (OS.SM_CXBORDER);
+	if ((bits1 & OS.WS_EX_CLIENTEDGE) != 0) return getSystemMetrics (OS.SM_CXEDGE, zoom);
+	if ((bits1 & OS.WS_EX_STATICEDGE) != 0) return getSystemMetrics (OS.SM_CXBORDER, zoom);
 	int bits2 = OS.GetWindowLong (borderHandle, OS.GWL_STYLE);
 
 	if ((bits2 & OS.WS_BORDER) != 0) {
@@ -1191,9 +1192,9 @@ int getBorderWidthInPixels () {
 		 * saves screen space, but could break some layouts.
 		 */
 		if (isUseWsBorder ())
-			return getSystemMetrics (OS.SM_CXEDGE);
+			return getSystemMetrics (OS.SM_CXEDGE, zoom);
 
-		return getSystemMetrics (OS.SM_CXBORDER);
+		return getSystemMetrics (OS.SM_CXBORDER, zoom);
 	}
 
 	return 0;

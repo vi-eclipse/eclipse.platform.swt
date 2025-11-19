@@ -242,7 +242,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 		OS.GetWindowRect (handle, oldRect);
 		int oldWidth = oldRect.right - oldRect.left;
 		int oldHeight = oldRect.bottom - oldRect.top;
-		int border = getBorderWidthInPixels ();
+		int border = getBorderWidthInPixels (zoom);
 		int newWidth = hintInPoints.x == SWT.DEFAULT ? 0x3FFF : hintInPixels.x + border * 2;
 		int newHeight = hintInPoints.y == SWT.DEFAULT ? 0x3FFF : hintInPixels.y + border * 2;
 		boolean redraw = getDrawing () && OS.IsWindowVisible (handle);
@@ -1552,7 +1552,7 @@ LRESULT WM_SIZE (long wParam, long lParam) {
 	if ((style & SWT.BORDER) != 0 && (style & SWT.WRAP) != 0) {
 		RECT windowRect = new RECT ();
 		OS.GetWindowRect (handle, windowRect);
-		int index = 0, border = getBorderWidthInPixels () * 2;
+		int index = 0, border = getBorderWidthInPixels (nativeZoom) * 2;
 		RECT rect = new RECT ();
 		int count = (int)OS.SendMessage (handle, OS.TB_BUTTONCOUNT, 0, 0);
 		while (index < count) {

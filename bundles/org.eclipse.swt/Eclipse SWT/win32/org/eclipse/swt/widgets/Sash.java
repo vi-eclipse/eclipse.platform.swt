@@ -130,7 +130,7 @@ static int checkStyle (int style) {
 Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	checkWidget ();
 	Point hintInPixels = Win32DPIUtils.pointToPixelAsSufficientlyLargeSize(hintInPoints, zoom);
-	int border = getBorderWidthInPixels ();
+	int border = getBorderWidthInPixels (zoom);
 	int width = border * 2, height = border * 2;
 	if ((style & SWT.HORIZONTAL) != 0) {
 		width += DEFAULT_WIDTH;  height += 3;

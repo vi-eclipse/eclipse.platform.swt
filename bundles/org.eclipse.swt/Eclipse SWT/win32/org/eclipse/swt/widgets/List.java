@@ -257,7 +257,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	if (height == 0) height = DEFAULT_HEIGHT;
 	if (hintInPoints.x != SWT.DEFAULT) width = hintInPixels.x;
 	if (hintInPoints.y != SWT.DEFAULT) height = hintInPixels.y;
-	int border = getBorderWidthInPixels ();
+	int border = getBorderWidthInPixels (zoom);
 	width += border * 2 + INSET;
 	height += border * 2;
 	if ((style & SWT.V_SCROLL) != 0) {

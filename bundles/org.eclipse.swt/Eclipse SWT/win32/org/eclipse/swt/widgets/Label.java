@@ -134,7 +134,7 @@ static int checkStyle (int style) {
 Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	checkWidget ();
 	Point hintInPixels = Win32DPIUtils.pointToPixelAsSufficientlyLargeSize(hintInPoints, zoom);
-	int width = 0, height = 0, border = getBorderWidthInPixels ();
+	int width = 0, height = 0, border = getBorderWidthInPixels (zoom);
 	if ((style & SWT.SEPARATOR) != 0) {
 		int lineWidth = getSystemMetrics (OS.SM_CXBORDER, zoom);
 		if ((style & SWT.HORIZONTAL) != 0) {

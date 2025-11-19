@@ -193,7 +193,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	RECT rect = new RECT ();
 	OS.SetRect (rect, 0, 0, width, size.y);
 	OS.SendMessage (handle, OS.TCM_ADJUSTRECT, 1, rect);
-	int border = getBorderWidthInPixels ();
+	int border = getBorderWidthInPixels (zoom);
 	rect.left -= border;  rect.right += border;
 	width = rect.right - rect.left;
 	size.x = Math.max (width, size.x);
@@ -205,7 +205,7 @@ Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	RECT rect = new RECT ();
 	OS.SetRect (rect, x, y, x + width, y + height);
 	OS.SendMessage (handle, OS.TCM_ADJUSTRECT, 1, rect);
-	int border = getBorderWidthInPixels ();
+	int border = getBorderWidthInPixels (zoom);
 	rect.left -= border;  rect.right += border;
 	rect.top -= border;  rect.bottom += border;
 	int newWidth = rect.right - rect.left;

@@ -144,7 +144,7 @@ protected void checkSubclass () {
 Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	Point hintInPixels = Win32DPIUtils.pointToPixelAsSufficientlyLargeSize(hintInPoints, zoom);
 	int width = 0, height = 0;
-	int border = getBorderWidthInPixels ();
+	int border = getBorderWidthInPixels (zoom);
 	int newWidth = hintInPoints.x == SWT.DEFAULT ? 0x3FFF : hintInPixels.x + (border * 2);
 	int newHeight = hintInPoints.y == SWT.DEFAULT ? 0x3FFF : hintInPixels.y + (border * 2);
 	int count = (int)OS.SendMessage (handle, OS.RB_GETBANDCOUNT, 0, 0);
@@ -1157,7 +1157,7 @@ LRESULT wmNotifyChild (NMHDR hdr, long wParam, long lParam) {
 		case OS.RBN_HEIGHTCHANGE: {
 			if (!ignoreResize) {
 				Point size = getSizeInPixels ();
-				int border = getBorderWidthInPixels ();
+				int border = getBorderWidthInPixels (nativeZoom);
 				int barHeight = (int)OS.SendMessage (handle, OS.RB_GETBARHEIGHT, 0, 0);
 				if ((style & SWT.VERTICAL) != 0) {
 					setSizeInPixels (barHeight + 2 * border, size.y);

@@ -326,7 +326,7 @@ int computeLeftMargin () {
 Point computeSizeInPixels (Point hintInPoints, int zoom, boolean changed) {
 	checkWidget ();
 	Point hintInPixels = Win32DPIUtils.pointToPixelAsSufficientlyLargeSize(hintInPoints, zoom);
-	int width = 0, height = 0, border = getBorderWidthInPixels ();
+	int width = 0, height = 0, border = getBorderWidthInPixels (zoom);
 	if ((style & SWT.ARROW) != 0) {
 		if ((style & (SWT.UP | SWT.DOWN)) != 0) {
 			width += getSystemMetrics (OS.SM_CXVSCROLL, zoom);

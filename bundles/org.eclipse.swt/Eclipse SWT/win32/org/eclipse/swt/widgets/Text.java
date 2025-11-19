@@ -951,9 +951,9 @@ void fixAlignment () {
 	OS.SetWindowLong (handle, OS.GWL_STYLE, bits2);
 }
 
-@Override int getBorderWidthInPixels () {
+@Override int getBorderWidthInPixels (int zoom) {
 	checkWidget ();
-	return super.getBorderWidthInPixels ();
+	return super.getBorderWidthInPixels (zoom);
 }
 
 /**
