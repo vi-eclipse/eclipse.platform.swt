@@ -112,7 +112,7 @@ public class Tree extends Composite {
 
 	static final boolean ENABLE_TVS_EX_FADEINOUTEXPANDOS = System.getProperty("org.eclipse.swt.internal.win32.enableFadeInOutExpandos") != null;
 	static final int TIMER_MAX_COUNT = 8;
-	static final int INSET = 3;
+	static final int INSET = 4;
 	static final int GRID_WIDTH = 1;
 	static final int HEADER_MARGIN = 12;
 	static final int HEADER_EXTRA = 3;
@@ -120,7 +120,7 @@ public class Tree extends Composite {
 	static final int EXPLORER_EXTRA = 2;
 	static final int DRAG_IMAGE_SIZE = 301;
 	// The default Indent at 100 dpi
-	static final int DEFAULT_INDENT = 16;
+	static final int DEFAULT_INDENT = 20;
 	static final long TreeProc;
 	static final TCHAR TreeClass = new TCHAR (0, OS.WC_TREEVIEW, true);
 	static final long HeaderProc;

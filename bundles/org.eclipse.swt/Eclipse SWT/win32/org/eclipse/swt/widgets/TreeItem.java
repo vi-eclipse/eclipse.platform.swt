@@ -440,7 +440,7 @@ RECT getBounds (int index, boolean getText, boolean getImage, boolean fullText, 
 		if (getImage && !fullImage) {
 			if (OS.SendMessage (hwnd, OS.TVM_GETIMAGELIST, OS.TVSIL_NORMAL, 0) != 0) {
 				Point size = parent.getImageSize ();
-				rect.left -= size.x + Tree.INSET;
+				rect.left -= size.x + (((parent.style & SWT.CHECK) != 0) ? Tree.INSET : DPIUtil.pointToPixel(Tree.INSET, getZoom()));
 				if (!getText) rect.right = rect.left + size.x;
 			} else {
 				if (!getText) rect.right = rect.left;
