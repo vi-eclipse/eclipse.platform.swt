@@ -843,6 +843,12 @@ private ImageHandle getImageMetadata(ZoomContext zoomContext) {
 	if (zoomLevelToImageHandle.get(targetZoom) != null) {
 		return zoomLevelToImageHandle.get(targetZoom);
 	}
+	try {
+		Thread.sleep(2000);
+	} catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 	return imageProvider.newImageHandle(zoomContext);
 }
 
@@ -1327,6 +1333,12 @@ public ImageData getImageData (int zoom) {
 	if (isDisposed()) SWT.error(SWT.ERROR_GRAPHIC_DISPOSED);
 	if (zoomLevelToImageHandle.containsKey(zoom)) {
 		return zoomLevelToImageHandle.get(zoom).getImageData();
+	}
+	try {
+		Thread.sleep(2000);
+	} catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
 	}
 	return this.imageProvider.newImageData(zoom);
 }
