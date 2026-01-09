@@ -16,6 +16,7 @@ package org.eclipse.swt.widgets;
 
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.stream.*;
 
@@ -84,6 +85,8 @@ public abstract class Control extends Widget implements Drawable {
 	private static final String DATA_AUTOSCALE_DISABLED = "AUTOSCALE_DISABLED";
 
 	private static final String PROPOGATE_AUTOSCALE_DISABLED = "PROPOGATE_AUTOSCALE_DISABLED";
+
+	private final Queue<Runnable> asyncDpiChangeProcessors = new ConcurrentLinkedQueue<>();
 /**
  * Prevents uninitialized instances from being created outside the package.
  */
@@ -5008,6 +5011,7 @@ long windowProc (long hwnd, int msg, long wParam, long lParam) {
 		case OS.WM_XBUTTONUP:			result = WM_XBUTTONUP (wParam, lParam); break;
 		case OS.WM_DPICHANGED:			result = WM_DPICHANGED (wParam, lParam); break;
 		case OS.WM_DISPLAYCHANGE:		result = WM_DISPLAYCHANGE(wParam, lParam); break;
+		case OS.WM_USER_PROCESS_DPI_EVENT:	result = WM_PROCESS_DPI_EVENT(wParam, lParam); break;
 	}
 	if (result != null) return result.value;
 	// widget could be disposed at this point
@@ -5837,6 +5841,16 @@ LRESULT WM_UPDATEUISTATE (long wParam, long lParam) {
 	return null;
 }
 
+LRESULT WM_PROCESS_DPI_EVENT (long wParam, long lParam) {
+	Runnable nextEventProcessor = asyncDpiChangeProcessors.poll();
+	if (nextEventProcessor == null) {
+		getDisplay().getRuntimeExceptionHandler().accept(new IllegalStateException("Tried to process DPI change event but none was queued"));
+	} else {
+		nextEventProcessor.run();
+	}
+	return null;
+}
+
 LRESULT WM_VSCROLL (long wParam, long lParam) {
 	Control control = display.getControl (lParam);
 	if (control == null) return null;
@@ -5992,7 +6006,8 @@ static class DPIChangeExecution {
 			asyncExec &= (comp.layout != null);
 		}
 		if (asyncExec) {
-			control.getDisplay().asyncExec(operation::run);
+			control.asyncDpiChangeProcessors.add(operation);
+			OS.PostMessage(control.handle, OS.WM_USER_PROCESS_DPI_EVENT, 0, 0);
 		} else {
 			operation.run();
 		}

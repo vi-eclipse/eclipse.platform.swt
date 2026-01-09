@@ -1830,6 +1830,7 @@ public class OS extends C {
 	public static final int WM_UNINITMENUPOPUP = 0x0125;
 	public static final int WM_UPDATEUISTATE = 0x0128;
 	public static final int WM_USER = 0x400;
+	public static final int WM_USER_PROCESS_DPI_EVENT = WM_USER + 1;
 	public static final int WM_VSCROLL = 0x115;
 	public static final int WM_WINDOWPOSCHANGED = 0x47;
 	public static final int WM_WINDOWPOSCHANGING = 0x46;
